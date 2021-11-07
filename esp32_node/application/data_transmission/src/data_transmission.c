@@ -1,10 +1,3 @@
-/* ESP HTTP Client Example
-   This example code is in the Public Domain (or CC0 licensed, at your option.)
-   Unless required by applicable law or agreed to in writing, this
-   software is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-   CONDITIONS OF ANY KIND, either express or implied.
-*/
-
 
 #include <stdio.h>
 #include "esp_wifi.h"
@@ -23,17 +16,9 @@
 
 #include "cJSON.h"
 
-#define NO_DATA_TIMEOUT_SEC 10
-
-#define CONFIG_WEBSOCKET_URI_FROM_STDIN 0
-
-#define CONFIG_WEBSOCKET_URI "ws://192.168.15.11"
-
-static const char *TAG = "WEBSOCKET";
-
-static TimerHandle_t shutdown_signal_timer;
-static SemaphoreHandle_t shutdown_sema;
+static const char *TAG = "DATA TRANSMISSION";
 static esp_websocket_client_handle_t client;
+
 extern const uint8_t start_ecg[] asm("_binary_dump_txt_start");
 extern const uint8_t end_ecg[] asm("_binary_dump_txt_end");
 
@@ -62,8 +47,17 @@ static void send_flash_data(esp_websocket_client_handle_t client){
     }
 
 }
-
-//sends the header of the binary data
+//Cabecalho com dado
+/**
+{
+    "MAC":"MAC-ID",
+    "Paciente":"Pessoa",
+    "criptografia":"aes_cbc",
+    "Tamanho":80000,
+    "chave publica":"<chave>"
+}
+criptografia pode ser none,aes_cbc,3DES por enquanto
+*/
 static void prepare_data_sent(esp_websocket_client_handle_t client,uint8_t type,uint32_t size, uint8_t * key, uint8_t * iv){
     (void)type;
     char * jsonBuffer;
@@ -127,19 +121,12 @@ static void first_message(esp_websocket_client_handle_t client){
     
 }
 
-static void shutdown_signaler(TimerHandle_t xTimer)
-{
-    ESP_LOGI(TAG, "No data received for %d seconds, signaling shutdown", NO_DATA_TIMEOUT_SEC);
-    xSemaphoreGive(shutdown_sema);
-    
-}
-
-static void process_state_machine(void){
+//Processa as respostas do websocket
+void process_state_machine(const char * data, size_t data_len){
 
     switch(state_machine){
         case START:
         break;
-        
         case READY_TO_SEND:
         first_message(client);
         vTaskDelay(10 / portTICK_RATE_MS);
@@ -163,93 +150,9 @@ static void process_state_machine(void){
 
 }
 
-static void websocket_event_handler(void *handler_args, esp_event_base_t base, int32_t event_id, void *event_data)
-{
-    esp_websocket_event_data_t *data = (esp_websocket_event_data_t *)event_data;
-    switch (event_id) {
-    case WEBSOCKET_EVENT_CONNECTED:
-        ESP_LOGI(TAG, "WEBSOCKET_EVENT_CONNECTED");
-        if(state_machine == START){
-            state_machine = READY_TO_SEND;
-        }
-        break;
-    case WEBSOCKET_EVENT_DISCONNECTED:
-        ESP_LOGI(TAG, "WEBSOCKET_EVENT_DISCONNECTED");
-        break;
-    case WEBSOCKET_EVENT_DATA:
-        ESP_LOGI(TAG, "WEBSOCKET_EVENT_DATA");
-        ESP_LOGI(TAG, "Received opcode=%d", data->op_code);
-        if (data->op_code == 0x08 && data->data_len == 2) {
-            ESP_LOGW(TAG, "Received closed message with code=%d", 256*data->data_ptr[0] + data->data_ptr[1]);
-        } else {
-            ESP_LOGW(TAG, "Received=%.*s", data->data_len, (char *)data->data_ptr);
-        }
-        ESP_LOGW(TAG, "Total payload length=%d, data_len=%d, current payload offset=%d\r\n", data->payload_len, data->data_len, data->payload_offset);
-
-        xTimerReset(shutdown_signal_timer, portMAX_DELAY);
-        break;
-    case WEBSOCKET_EVENT_ERROR:
-        ESP_LOGI(TAG, "WEBSOCKET_EVENT_ERROR");
-        break;
-    }
-}
-
-static void websocket_app_start(void)
-{
-    esp_websocket_client_config_t websocket_cfg = {};
-
-    shutdown_signal_timer = xTimerCreate("Websocket shutdown timer", NO_DATA_TIMEOUT_SEC * 1000 / portTICK_PERIOD_MS,
-                                         pdFALSE, NULL, shutdown_signaler);
-    shutdown_sema = xSemaphoreCreateBinary();
-
-    websocket_cfg.uri = CONFIG_WEBSOCKET_URI;
-    websocket_cfg.port = 8765;
-
-    ESP_LOGI(TAG, "Connecting to %s...", websocket_cfg.uri);
-
-    client = esp_websocket_client_init(&websocket_cfg);
-    esp_websocket_register_events(client, WEBSOCKET_EVENT_ANY, websocket_event_handler, (void *)client);
-    esp_websocket_client_start(client);
-    xTimerStart(shutdown_signal_timer, portMAX_DELAY);
-    char data[32];
-    int len;
-    //wait connection
-    while(esp_websocket_client_is_connected(client) != true){
-    vTaskDelay(10 / portTICK_RATE_MS);
-    }
-    // while(1){
-    //     process_state_machine();
-    // }
-    if (esp_websocket_client_is_connected(client)) {
-        len = sprintf(data, "BEGIN");
-        ESP_LOGI(TAG, "Sending %s", data);
-        esp_websocket_client_send_text(client, data, len, portMAX_DELAY);
-    }
-    vTaskDelay(1000 / portTICK_RATE_MS);
-    prepare_data_sent(client,0,300,NULL,NULL);
-    vTaskDelay(1000 / portTICK_RATE_MS);
-    send_flash_data(client);
-    vTaskDelay(1000 / portTICK_RATE_MS);
-    prepare_data_sent(client,1,300,my_key,my_iv);
-    // prepare_data_sent(client,1,300,NULL,NULL);
-    // vTaskDelay(1000 / portTICK_RATE_MS);
-    // prepare_data_sent(client,2,300,NULL,NULL);
-
-
-    // send_flash_data(client);
-    // for(uint32_t i = 0 ; i < 1000 ;){
-    //     esp_websocket_client_send_bin(client, (char*)&start_ecg[i], 100, portMAX_DELAY);
-    //     i = i + 100;
-    //     vTaskDelay(10 / portTICK_RATE_MS);
-
-    // }
-    // vTaskDelay(1000 / portTICK_RATE_MS);
-    // xSemaphoreTake(shutdown_sema, portMAX_DELAY);
-    // esp_websocket_client_close(client, portMAX_DELAY);
-    // ESP_LOGI(TAG, "Websocket Stopped");
-    // esp_websocket_client_destroy(client);
-}
-
-void init_data_transmission(void){
-    websocket_app_start();
+//inicializa o esquema de transmissao
+//chamado quanto o websocket é formado
+void start_data_transmission(esp_websocket_client_handle_t websocket_client){
+    //modulo local recebe o cliente websocket
+    client = websocket_client;
 }

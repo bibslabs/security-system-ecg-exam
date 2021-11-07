@@ -61,7 +61,7 @@ static const char *TAG = "example";
 void app_main(void)
 {
     start_wifi();
-    init_data_transmission();
+    init_websocket();
     // xTaskCreate(&https_get_task, "https_get_task", 8192, NULL, 5, NULL);
     //mount_hl7_fhir_ecg(NULL);
 }

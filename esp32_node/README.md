@@ -13,6 +13,8 @@ o arquivo do ecg esta embutido no firmware em application/data_transmission/dump
 a leitura dos arquivos do physionet pode ser utilizado pelo script ```parse_data.py``` com isso é possível ler .dat usar numpy para adquirir uma numpy.array dos dados, e converter em bytes. o arquivo dump.txt é acoplado ao firmware
 por meio da diretiva do cmake EMBED_TXTFILES, assim ao compilar o código este dado estará dentro do firmware
 
+a leitura ECG embutida possui por volta de 80000 bytes e trata-se de uma leitura de ~15 segundos o arquivo é enviado como uma numpy array, e no lado do servidor ele irá re-encodar os bytes de novo em um numpy array
+
 
 ## Servidor websocket python
 
@@ -29,3 +31,23 @@ Servidor consegue pegar cabeçalhos de comandos e converter bytes recebidos em u
 
 por meio da implementação mbedTLS do framework esp-idf do esp32 é possível implementar uma série de criptografias
 como AES 3DES, blowfish e etc. 
+
+## Esquema de comunicação 
+
+Ao ser ligado (ou pressionado botão) o esp irá iniciar o proceso de conexão segura com o servidor central, ele irá enviar um JSON inicial por meio de _websockets_ que conterá informações básicas acerca do dispositivo e da conexão
+
+```JSON
+{
+    "MAC":"MAC-ID",
+    "Paciente":"Pessoa",
+    "criptografia":"aes_cbc",
+    "Tamanho":80000,
+    "chave publica":"<chave>"
+}
+```
+
+em seguida o próximo pacote será os dados do ECG com a designada criptografia  e com a quantidade de bytes estabelecida pelo cabeçalho
+
+### Troca de chaves
+
+será implementado uma metodologia de troca de chaves de diffie hellman que adicionará mais uma camada de segurança para a comunicação do servidor, fazendo com que mesmo que algum intruso consiga adentrar a comunicação TLS segura, os dados ainda estejam protegidos por outra camada de criptografia.
