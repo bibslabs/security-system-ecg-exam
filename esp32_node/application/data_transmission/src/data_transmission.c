@@ -125,7 +125,13 @@ static void first_message(esp_websocket_client_handle_t client){
 }
 
 //Processa as respostas do websocket
+/**
+ *  Maquina de estados
+ *  Inicia a comunicacao
+ */
 void process_state_machine(const char * data, size_t data_len){
+
+    cJSON * parse = cJSON_ParseWithLength(data,data_len);
 
     switch(state_machine){
         case START:

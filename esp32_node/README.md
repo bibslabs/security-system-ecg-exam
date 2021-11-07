@@ -51,7 +51,7 @@ em seguida o próximo pacote será o cabeçalho dos dados do ECG, este cabeçalh
     "Tamanho":80000,
 ```
 
-Em seguida o próximo pacote será um _stream_ de bytes, o servidor terá que armazenar o buffer de bytes para posteriormente descriptografar (se necessario) e ler ECG
+Por fim o próximo pacote será um _stream_ de bytes, o servidor terá que armazenar o buffer de bytes para posteriormente descriptografar (se necessario) e converter no formato ECG
 
 
 ### Troca de chaves
