@@ -29,7 +29,8 @@ static uint8_t my_key[32] = {0x39,0x79,0x24,0x42,0x26,0x45,0x29,0x48,0x40,0x4D,0
 static uint8_t my_iv[16] = {0x2B,0x4D,0x62,0x51,0x65,0x54,0x68,0x57,0x6D,0x5A,0x71,0x34,
                                 0x74,0x37,0x77,0x21};
 
-typedef enum {START = 0, READY_TO_SEND = 1, SENDING_RAW, WAIT_RESPONSE, SENDING_AES_CBC }send_status_t;
+//maquina de estados da transferenceia dos dados
+typedef enum {START = 0, AUTH = 1, HEADER_RAW ,SEND_RAW, WAIT, HEADER_AES, SEND_AES }send_status_t;
 
 static send_status_t state_machine = START;
 
@@ -114,6 +115,8 @@ static void first_message(esp_websocket_client_handle_t client){
     cJSON_AddStringToObject(data,"IP","192.168.10.1");
     esp_read_mac((uint8_t*)&mac[0],ESP_MAC_WIFI_SOFTAP);
     cJSON_AddStringToObject(data,"MAC",mac);
+    cJSON_AddStringToObject(data,"Paciente","Joao");
+
     jsonBuffer = cJSON_Print(data);
 
     esp_websocket_client_send_text(client, jsonBuffer, strlen(jsonBuffer), portMAX_DELAY);
@@ -127,26 +130,28 @@ void process_state_machine(const char * data, size_t data_len){
     switch(state_machine){
         case START:
         break;
-        case READY_TO_SEND:
+        case AUTH:
         first_message(client);
-        vTaskDelay(10 / portTICK_RATE_MS);
-        state_machine = SENDING_RAW;
+        state_machine = HEADER_RAW;
         break;
 
-        case SENDING_RAW:
+        case SEND_RAW:
         prepare_data_sent(client,0,300,NULL,NULL);
         vTaskDelay(10 / portTICK_RATE_MS);
         send_flash_data(client);
-        state_machine = WAIT_RESPONSE;
+        state_machine = WAIT;
         break;
 
-        case WAIT_RESPONSE:
+        case WAIT:
         break;
 
-        case SENDING_AES_CBC:
+        case SEND_AES:
+        break;
+
+        default:
         break;
     }
-        vTaskDelay(10 / portTICK_RATE_MS);
+        // vTaskDelay(10 / portTICK_RATE_MS);
 
 }
 

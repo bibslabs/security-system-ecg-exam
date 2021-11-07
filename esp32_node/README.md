@@ -40,14 +40,22 @@ Ao ser ligado (ou pressionado botão) o esp irá iniciar o proceso de conexão s
 {
     "MAC":"MAC-ID",
     "Paciente":"Pessoa",
-    "criptografia":"aes_cbc",
-    "Tamanho":80000,
     "chave publica":"<chave>"
 }
 ```
 
-em seguida o próximo pacote será os dados do ECG com a designada criptografia  e com a quantidade de bytes estabelecida pelo cabeçalho
+em seguida o próximo pacote será o cabeçalho dos dados do ECG, este cabeçalho atualmente possui a criptografia utilizada e o tamanho da próxima transferência
+
+```JSON
+    "criptografia":"aes_cbc",
+    "Tamanho":80000,
+```
+
+Em seguida o próximo pacote será um _stream_ de bytes, o servidor terá que armazenar o buffer de bytes para posteriormente descriptografar (se necessario) e ler ECG
+
 
 ### Troca de chaves
 
 será implementado uma metodologia de troca de chaves de diffie hellman que adicionará mais uma camada de segurança para a comunicação do servidor, fazendo com que mesmo que algum intruso consiga adentrar a comunicação TLS segura, os dados ainda estejam protegidos por outra camada de criptografia.
+
+A troca de chaves se dará pelo primeiro cabeçalho de autenticação que contém uma chave publica com isso o servidor e o cliente esp32 terão uma chave mixada igual de maneira privada
