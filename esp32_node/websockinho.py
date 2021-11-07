@@ -12,9 +12,18 @@ from Crypto.Cipher import DES
 from Crypto.Random import get_random_bytes
 np.set_printoptions(threshold=np.inf)
 
+class ESP32_Client:
+    def __init__(self, MAC, IP):
+        self.mac = MAC
+        self.ip = IP
+    def update_state(self,state):
+        self.state = state
+
 current_key = b""
 current_iv = b""
 
+#lista que vai guardar todas instancias de clientess
+clientes = []
 
 def get_crypto_cfg(message):
     try:

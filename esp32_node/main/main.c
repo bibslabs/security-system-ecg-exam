@@ -31,14 +31,16 @@
 #include "esp_log.h"
 #include "esp_system.h"
 #include "nvs_flash.h"
-#include "protocol_examples_common.h"
 #include "esp_netif.h"
+#include "esp_websocket_client.h"
 
 #include "lwip/err.h"
 #include "lwip/sockets.h"
 #include "lwip/sys.h"
 #include "lwip/netdb.h"
 #include "lwip/dns.h"
+
+
 
 #include "esp_tls.h"
 #include "esp_crt_bundle.h"

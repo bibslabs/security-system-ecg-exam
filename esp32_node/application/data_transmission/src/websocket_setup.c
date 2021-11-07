@@ -95,7 +95,7 @@ static void websocket_app_start(void)
     while(esp_websocket_client_is_connected(client) != true){
     vTaskDelay(10 / portTICK_RATE_MS);
     }
-    start_data_transmission();
+    start_data_transmission(client);
 }
 
 void init_websocket(void){

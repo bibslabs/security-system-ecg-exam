@@ -12,14 +12,44 @@
 #include <mbedtls/error.h>
 #include <mbedtls/ssl_internal.h>
 
-#include <protocomm_security.h>
-#include <protocomm_security1.h>
 
-#include "session.pb-c.h"
-#include "sec1.pb-c.h"
-#include "constants.pb-c.h"
+#define PUBLIC_KEY_LEN  32
+#define SZ_RANDOM       16
 
 static const char* TAG = "DIFFI_HELLMAN";
+
+typedef struct session {
+    /* Session data */
+    uint32_t id;
+    uint8_t state;
+    uint8_t device_pubkey[PUBLIC_KEY_LEN];
+    uint8_t client_pubkey[PUBLIC_KEY_LEN];
+    uint8_t sym_key[PUBLIC_KEY_LEN];
+    uint8_t rand[SZ_RANDOM];
+
+    /* mbedtls context data for AES */
+    mbedtls_aes_context ctx_aes;
+    unsigned char stb[16];
+    size_t nc_off;
+} session_t;
+
+session_t cur_session;
+
+static void flip_endian(uint8_t *data, size_t len)
+{
+    uint8_t swp_buf;
+    for (int i = 0; i < len/2; i++) {
+        swp_buf = data[i];
+        data[i] = data[len - i - 1];
+        data[len - i - 1] = swp_buf;
+    }
+}
+
+static void hexdump(const char *msg, uint8_t *buf, int len)
+{
+    ESP_LOGD(TAG, "%s:", msg);
+    ESP_LOG_BUFFER_HEX_LEVEL(TAG, buf, len, ESP_LOG_DEBUG);
+}
 
 void init_diffie_hellman(void){
 
@@ -66,19 +96,19 @@ void init_diffie_hellman(void){
     }
 
     mbed_err = mbedtls_mpi_write_binary(&ctx_server->Q.X,
-                                        cur_session->device_pubkey,
+                                        cur_session.device_pubkey,
                                         PUBLIC_KEY_LEN);
     if (mbed_err != 0) {
         ESP_LOGE(TAG, "Failed at mbedtls_mpi_write_binary with error code : -0x%x", -mbed_err);
         ret = ESP_FAIL;
         goto exit_cmd0;
     }
-    flip_endian(cur_session->device_pubkey, PUBLIC_KEY_LEN);
+    flip_endian(cur_session.device_pubkey, PUBLIC_KEY_LEN);
 
-    memcpy(cur_session->client_pubkey, in->sc0->client_pubkey.data, PUBLIC_KEY_LEN);
+    // memcpy(cur_session->client_pubkey, in->sc0->client_pubkey.data, PUBLIC_KEY_LEN);
 
-    uint8_t *dev_pubkey = cur_session->device_pubkey;
-    uint8_t *cli_pubkey = cur_session->client_pubkey;
+    uint8_t *dev_pubkey = cur_session.device_pubkey;
+    uint8_t *cli_pubkey = cur_session.client_pubkey;
     hexdump("Device pubkey", dev_pubkey, PUBLIC_KEY_LEN);
     hexdump("Client pubkey", cli_pubkey, PUBLIC_KEY_LEN);
 
