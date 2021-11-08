@@ -16,6 +16,9 @@
 
 #include "cJSON.h"
 
+#define PING_PERIOD (10)
+#define PING_PERIO_MS (PING_PERIOD * 1000)
+
 static const char *TAG = "DATA TRANSMISSION";
 static esp_websocket_client_handle_t client;
 
@@ -33,6 +36,9 @@ static uint8_t my_iv[16] = {0x2B,0x4D,0x62,0x51,0x65,0x54,0x68,0x57,0x6D,0x5A,0x
 typedef enum {START = 0, AUTH = 1, HEADER_RAW ,SEND_RAW, WAIT, HEADER_AES, SEND_AES }send_status_t;
 
 static send_status_t state_machine = START;
+
+static TimerHandle_t ping_timer;
+
 
 static void send_aes_cbc_flash_data(esp_websocket_client_handle_t client){
     ESP_LOGI(TAG,"Sending AES CBC Cipher block data");
@@ -82,6 +88,13 @@ static void prepare_data_sent(esp_websocket_client_handle_t client,uint8_t type,
     esp_websocket_client_send_text(client, jsonBuffer, strlen(jsonBuffer), portMAX_DELAY);
 }
 
+
+static void periodic_ping(TimerHandle_t xTimer)
+{
+    ESP_LOGI(TAG, "Pinging the websocket server");
+    
+}
+
 /**
  * @brief Envia a primeira mensagem (autenticacao)
  * 
@@ -112,12 +125,6 @@ static void first_message(esp_websocket_client_handle_t client){
     
     
 }
-
-//checa conexao com o servidor periodicamente
-static void periodic_ping(void){
-
-}
-
 
 static void process_json(cJSON * data){
     //processar json recebido dependendo do estado da maquina de estados
@@ -160,7 +167,6 @@ void process_state_machine(const char * data, size_t data_len){
         break;
 
         default:
-        periodic_ping();
         break;
     }
         // vTaskDelay(10 / portTICK_RATE_MS);
@@ -175,5 +181,9 @@ void start_data_transmission(esp_websocket_client_handle_t websocket_client){
     client = websocket_client;
     ESP_LOGI(TAG,"My key %02x %02x %02x",my_key[0],my_key[1],my_key[2]);
     ESP_LOGI(TAG,"My IV %02x %02x %02x",my_iv[0],my_iv[1],my_iv[2]);
-    first_message(client);  
+    first_message(client);
+
+    ping_timer = xTimerCreate("Websocket Ping Timer", PING_PERIO_MS / portTICK_PERIOD_MS,
+    pdFALSE, NULL, periodic_ping);
+
 }
