@@ -22,7 +22,7 @@ class ESP32_Client:
 current_key = b""
 current_iv = b""
 
-#lista que vai guardar todas instancias de clientess
+#lista que vai guardar todas instancias de clientes
 clientes = []
 
 def get_crypto_cfg(message):
@@ -45,7 +45,7 @@ def decrypt_data(crypto_cfg,message):
         key = bytearray.fromhex(crypto_cfg["key"])
         iv = bytearray.fromhex(crypto_cfg["iv"])
 
-async def echo(websocket, path):
+async def handler(websocket, path):
     async for message in websocket:
         #print("data ",len(message))
         if(len(message) > 1000):#mensagem de dados eh grande 
@@ -61,7 +61,7 @@ async def echo(websocket, path):
             
 
 async def main():
-    async with websockets.serve(echo, "192.168.15.11", 8765):
+    async with websockets.serve(handler, "192.168.15.11", 8765):
         await asyncio.Future()  # run forever
 
 asyncio.run(main())

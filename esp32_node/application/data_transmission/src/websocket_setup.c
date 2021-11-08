@@ -23,6 +23,7 @@
 
 #include "cJSON.h"
 #include "data_transmission.h"
+#include "ec25519.h"
 
 #define NO_DATA_TIMEOUT_SEC 10
 
@@ -63,6 +64,7 @@ static void websocket_event_handler(void *handler_args, esp_event_base_t base, i
             ESP_LOGW(TAG, "Received=%.*s", data->data_len, (char *)data->data_ptr);
         }
         ESP_LOGW(TAG, "Total payload length=%d, data_len=%d, current payload offset=%d\r\n", data->payload_len, data->data_len, data->payload_offset);
+        //a maquina de estados é processada ao receber dados do websocket
         process_state_machine(data->data_ptr,data->data_len);
         xTimerReset(shutdown_signal_timer, portMAX_DELAY);
         break;
@@ -89,8 +91,6 @@ static void websocket_app_start(void)
     esp_websocket_register_events(client, WEBSOCKET_EVENT_ANY, websocket_event_handler, (void *)client);
     esp_websocket_client_start(client);
     xTimerStart(shutdown_signal_timer, portMAX_DELAY);
-    char data[32];
-    int len;
     //wait connection
     while(esp_websocket_client_is_connected(client) != true){
     vTaskDelay(10 / portTICK_RATE_MS);
@@ -99,5 +99,6 @@ static void websocket_app_start(void)
 }
 
 void init_websocket(void){
+    init_diffie_hellman();
     websocket_app_start();
 }

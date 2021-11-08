@@ -76,36 +76,24 @@ static void prepare_data_sent(esp_websocket_client_handle_t client,uint8_t type,
         default:
             cJSON_AddStringToObject(data,"crypto","Unknown");
         break;
-
         }
     cJSON_AddNumberToObject(data,"size",size);
-    char key_str[65]; //64 + 1 \0 null char
-    char iv_str[33];  //32 + 1 \0 null char
-    if(key != NULL){
-        for(uint8_t i = 0; i < sizeof(key_str)/2;i++){
-            sprintf(&key_str[i*2],"%02X",key[i]);
-        }
-        key_str[64] = '\0';
-        cJSON_AddStringToObject(data,"key",key_str);
-
-    }else{
-        cJSON_AddStringToObject(data,"key","key_str");
-    }
-    if(iv != NULL){
-        for(uint8_t i = 0; i < sizeof(iv_str)/2;i++){
-            sprintf(&iv_str[i*2],"%02X",iv[i]);
-        }
-        iv_str[32] = '\0';
-        cJSON_AddStringToObject(data,"IV",iv_str);
-
-    }else{
-        cJSON_AddStringToObject(data,"IV","iv_str");
-    }
-
     jsonBuffer = cJSON_Print(data);
     esp_websocket_client_send_text(client, jsonBuffer, strlen(jsonBuffer), portMAX_DELAY);
 }
 
+/**
+ * @brief Envia a primeira mensagem (autenticacao)
+ * 
+ * envia a primeira mensagem com os seguines dados
+ * {
+ *   "MAC":"MAC-ID",
+ *   "Paciente":"Pessoa",
+ *   "chave publica":"<chave>"
+ *  }
+ * 
+ * @param client 
+ */
 static void first_message(esp_websocket_client_handle_t client){
     ESP_LOGI(TAG,"Enviando identificacao");
     char * jsonBuffer;
@@ -116,34 +104,50 @@ static void first_message(esp_websocket_client_handle_t client){
     esp_read_mac((uint8_t*)&mac[0],ESP_MAC_WIFI_SOFTAP);
     cJSON_AddStringToObject(data,"MAC",mac);
     cJSON_AddStringToObject(data,"Paciente","Joao");
+    cJSON_AddStringToObject(data,"pubkey","2A3B4B1102BEEF");
 
     jsonBuffer = cJSON_Print(data);
 
     esp_websocket_client_send_text(client, jsonBuffer, strlen(jsonBuffer), portMAX_DELAY);
-
+    
     
 }
 
-//Processa as respostas do websocket
-/**
- *  Maquina de estados
- *  Inicia a comunicacao
- */
+//checa conexao com o servidor periodicamente
+static void periodic_ping(void){
+
+}
+
+
+static void process_json(cJSON * data){
+    //processar json recebido dependendo do estado da maquina de estados
+
+}
+
+
+//processa as respostas do websocket
 void process_state_machine(const char * data, size_t data_len){
 
     cJSON * parse = cJSON_ParseWithLength(data,data_len);
-
+    if(parse != NULL){
+        ESP_LOGI(TAG,"Valid Json");
+        process_json(parse);
+    }else{
+        ESP_LOGE(TAG,"Invalid JSON");
+    }
     switch(state_machine){
         case START:
+        state_machine = AUTH;
         break;
         case AUTH:
-        first_message(client);
         state_machine = HEADER_RAW;
         break;
 
+        case HEADER_RAW:
+        //enviar cabecalho de dado sem criptografia
+        prepare_data_sent(client,0,end_ecg - start_ecg,NULL,NULL);
+        break;
         case SEND_RAW:
-        prepare_data_sent(client,0,300,NULL,NULL);
-        vTaskDelay(10 / portTICK_RATE_MS);
         send_flash_data(client);
         state_machine = WAIT;
         break;
@@ -152,9 +156,11 @@ void process_state_machine(const char * data, size_t data_len){
         break;
 
         case SEND_AES:
+        send_aes_cbc_flash_data(client);
         break;
 
         default:
+        periodic_ping();
         break;
     }
         // vTaskDelay(10 / portTICK_RATE_MS);
@@ -165,5 +171,9 @@ void process_state_machine(const char * data, size_t data_len){
 //chamado quanto o websocket é formado
 void start_data_transmission(esp_websocket_client_handle_t websocket_client){
     //modulo local recebe o cliente websocket
+    ESP_LOGI(TAG,"Iniciando  transmissao de dados, enviando cabecalho inicial");
     client = websocket_client;
+    ESP_LOGI(TAG,"My key %02x %02x %02x",my_key[0],my_key[1],my_key[2]);
+    ESP_LOGI(TAG,"My IV %02x %02x %02x",my_iv[0],my_iv[1],my_iv[2]);
+    first_message(client);  
 }

@@ -52,13 +52,6 @@
 
 #define MAX_URLS    2
 
-static const char *web_urls[MAX_URLS] = {
-    "https://www.howsmyssl.com/a/check",
-    "https://espressif.com",
-};
-
-static const char *TAG = "example";
-
 
 void app_main(void)
 {
