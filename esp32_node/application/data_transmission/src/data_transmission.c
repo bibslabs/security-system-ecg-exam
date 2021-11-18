@@ -16,7 +16,7 @@
 
 #include "cJSON.h"
 
-#define PING_PERIOD (10)
+#define PING_PERIOD (5)
 #define PING_PERIO_MS (PING_PERIOD * 1000)
 
 static const char *TAG = "DATA TRANSMISSION";
@@ -91,8 +91,8 @@ static void prepare_data_sent(esp_websocket_client_handle_t client,uint8_t type,
 
 static void periodic_ping(TimerHandle_t xTimer)
 {
-    ESP_LOGI(TAG, "Pinging the websocket server");
-    
+    configASSERT( xTimer );
+    ESP_LOGI(TAG, "Send a server application PING");
 }
 
 /**
@@ -112,15 +112,19 @@ static void first_message(esp_websocket_client_handle_t client){
     char * jsonBuffer;
     cJSON * data = cJSON_CreateObject();
     char mac[9];
+    char mac_str[13]; //6 hex numbers + final pointer
     mac[8] = '\0';
+
     cJSON_AddStringToObject(data,"IP","192.168.10.1");
     esp_read_mac((uint8_t*)&mac[0],ESP_MAC_WIFI_SOFTAP);
-    cJSON_AddStringToObject(data,"MAC",mac);
+    sprintf(mac_str,"%02X%02X%02X%02X%02X%02X",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
+    mac_str[12] = '\0'; 
+    cJSON_AddStringToObject(data,"MAC",mac_str);
     cJSON_AddStringToObject(data,"Paciente","Joao");
     cJSON_AddStringToObject(data,"pubkey","2A3B4B1102BEEF");
 
     jsonBuffer = cJSON_Print(data);
-
+    ESP_LOGI(TAG,"Enviando Seguinte dado\n\r%s",jsonBuffer);
     esp_websocket_client_send_text(client, jsonBuffer, strlen(jsonBuffer), portMAX_DELAY);
     
     
@@ -144,7 +148,7 @@ void process_state_machine(const char * data, size_t data_len){
     }
     switch(state_machine){
         case START:
-        state_machine = AUTH;
+        first_message(client);
         break;
         case AUTH:
         state_machine = HEADER_RAW;
@@ -184,6 +188,6 @@ void start_data_transmission(esp_websocket_client_handle_t websocket_client){
     first_message(client);
 
     ping_timer = xTimerCreate("Websocket Ping Timer", PING_PERIO_MS / portTICK_PERIOD_MS,
-    pdFALSE, NULL, periodic_ping);
+    pdTRUE, NULL, periodic_ping);
 
 }
