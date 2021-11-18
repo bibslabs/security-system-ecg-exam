@@ -1,7 +1,7 @@
 import wfdb
 import numpy as np
 np.set_printoptions(threshold=np.inf)
-signals, fields = wfdb.rdsamp(r"ecg_data/ecg_data",channels=[0],sampto=175000)
+signals, fields = wfdb.rdsamp(r"ecg_data/ecg_data",channels=[0],sampto=100000)
 wfdb.plot_items(signal=signals,fs=fields['fs'], title='ECG')
 # Display it with the additional information
 # display((signals, fields))

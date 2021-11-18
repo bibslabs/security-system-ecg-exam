@@ -29,7 +29,7 @@
 
 #define CONFIG_WEBSOCKET_URI_FROM_STDIN 0
 
-#define CONFIG_WEBSOCKET_URI "ws://192.168.15.11"
+#define CONFIG_WEBSOCKET_URI "ws://192.168.169.102"
 
 static const char *TAG = "WEBSOCKET";
 

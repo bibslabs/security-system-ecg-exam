@@ -25,14 +25,14 @@
    the config you want - ie #define EXAMPLE_WIFI_SSID "mywifissid"
 */
 //wifi 1
-// #define EXAMPLE_ESP_WIFI_SSID      "FLIN_RFE 201 A"
-// #define EXAMPLE_ESP_WIFI_PASS      "LinhaLIVRE314089"
-// #define EXAMPLE_ESP_MAXIMUM_RETRY  3
+#define EXAMPLE_ESP_WIFI_SSID      "FLIN_RFE 201 A"
+#define EXAMPLE_ESP_WIFI_PASS      "LinhaLIVRE314089"
+#define EXAMPLE_ESP_MAXIMUM_RETRY  3
 
 //wifi 2
-#define EXAMPLE_ESP_WIFI_SSID      "VIVOFIBRA-C481"
-#define EXAMPLE_ESP_WIFI_PASS      "iYuUd3qeGA"
-#define EXAMPLE_ESP_MAXIMUM_RETRY  3
+// #define EXAMPLE_ESP_WIFI_SSID      "VIVOFIBRA-C481"
+// #define EXAMPLE_ESP_WIFI_PASS      "iYuUd3qeGA"
+// #define EXAMPLE_ESP_MAXIMUM_RETRY  3
 
 /* FreeRTOS event group to signal when we are connected*/
 static EventGroupHandle_t s_wifi_event_group;

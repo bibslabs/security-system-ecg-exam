@@ -61,7 +61,7 @@ async def handler(websocket, path):
             
 
 async def main():
-    async with websockets.serve(handler, "192.168.15.11", 8765):
+    async with websockets.serve(handler, "192.168.169.102", 8765):
         await asyncio.Future()  # run forever
 
 asyncio.run(main())
