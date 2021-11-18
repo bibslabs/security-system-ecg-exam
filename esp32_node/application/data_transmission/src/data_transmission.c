@@ -15,6 +15,7 @@
 #include "esp_event.h"
 
 #include "cJSON.h"
+#include "data_transmission.h"
 
 #define PING_PERIOD (5)
 #define PING_PERIO_MS (PING_PERIOD * 1000)
@@ -93,6 +94,7 @@ static void periodic_ping(TimerHandle_t xTimer)
 {
     configASSERT( xTimer );
     ESP_LOGI(TAG, "Send a server application PING");
+    process_state_machine(NULL,0);
 }
 
 /**
@@ -108,7 +110,6 @@ static void periodic_ping(TimerHandle_t xTimer)
  * @param client 
  */
 static void first_message(esp_websocket_client_handle_t client){
-    ESP_LOGI(TAG,"Enviando identificacao");
     char * jsonBuffer;
     cJSON * data = cJSON_CreateObject();
     char mac[9];
@@ -124,27 +125,28 @@ static void first_message(esp_websocket_client_handle_t client){
     cJSON_AddStringToObject(data,"pubkey","2A3B4B1102BEEF");
 
     jsonBuffer = cJSON_Print(data);
-    ESP_LOGI(TAG,"Enviando Seguinte dado\n\r%s",jsonBuffer);
+    ESP_LOGI(TAG,"Enviando identificacao \n\r%s",jsonBuffer);
     esp_websocket_client_send_text(client, jsonBuffer, strlen(jsonBuffer), portMAX_DELAY);
-    
     
 }
 
 static void process_json(cJSON * data){
     //processar json recebido dependendo do estado da maquina de estados
-
+    
 }
 
 
 //processa as respostas do websocket
 void process_state_machine(const char * data, size_t data_len){
 
-    cJSON * parse = cJSON_ParseWithLength(data,data_len);
-    if(parse != NULL){
-        ESP_LOGI(TAG,"Valid Json");
-        process_json(parse);
-    }else{
-        ESP_LOGE(TAG,"Invalid JSON");
+    if(data_len != 0){
+            cJSON * parse = cJSON_ParseWithLength(data,data_len);
+        if(parse != NULL){
+            ESP_LOGI(TAG,"Valid Json");
+            process_json(parse);
+        }else{
+            ESP_LOGE(TAG,"Invalid JSON");
+        }
     }
     switch(state_machine){
         case START:
@@ -187,7 +189,9 @@ void start_data_transmission(esp_websocket_client_handle_t websocket_client){
     ESP_LOGI(TAG,"My IV %02x %02x %02x",my_iv[0],my_iv[1],my_iv[2]);
     first_message(client);
 
-    ping_timer = xTimerCreate("Websocket Ping Timer", PING_PERIO_MS / portTICK_PERIOD_MS,
+    ping_timer = xTimerCreate("App Ping", 10 * 1000 / portTICK_PERIOD_MS,
     pdTRUE, NULL, periodic_ping);
-
+    if(ping_timer != NULL){
+        xTimerStart(ping_timer,portMAX_DELAY);
+    }
 }

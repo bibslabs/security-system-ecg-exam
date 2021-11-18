@@ -89,6 +89,7 @@ static void websocket_app_start(void)
 
     websocket_cfg.uri = CONFIG_WEBSOCKET_URI;
     websocket_cfg.port = 8765;
+    websocket_cfg.ping_interval_sec = 5;
 
     ESP_LOGI(TAG, "Connecting to %s...", websocket_cfg.uri);
 
