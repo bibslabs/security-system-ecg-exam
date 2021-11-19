@@ -42,26 +42,26 @@ def decrypt_data(crypto_cfg,message):
         wfdb.plot_items(signal=my_data,fs=500, title='ECG') #plotar dados recebidos
     elif(crypto_cfg["crypto"] == "aes_cbc"):
         print("processing aes cbc crypto mode")
-        key = bytearray.fromhex(crypto_cfg["key"])
-        iv = bytearray.fromhex(crypto_cfg["iv"])
+        # key = bytearray.fromhex(crypto_cfg["key"])
+        # iv = bytearray.fromhex(crypto_cfg["iv"])
 
 async def handler(websocket, path):
     async for message in websocket:
         #print("data ",len(message))
-        if(len(message) > 1000):#mensagem de dados eh grande 
-            decrypt_data(crypto_cfg,message)
-        else:
-            crypto_cfg = get_crypto_cfg(message)
+        # if(len(message) > 1000):#mensagem de dados eh grande 
+        #     decrypt_data(crypto_cfg,message)
+        # else:
+        #     crypto_cfg = get_crypto_cfg(message)
         if(type(message) is bytes):
-            #print("bytes ->",message)
+            print("bytes ->",str(message))
             pass
         else:
-            #print("string ->",message)
+            print("string ->",str(message))
             pass
             
 
 async def main():
-    async with websockets.serve(handler, "192.168.15.11", 8765):
+    async with websockets.serve(handler, "192.168.169.102", 8765):
         await asyncio.Future()  # run forever
 
 asyncio.run(main())

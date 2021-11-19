@@ -15,12 +15,35 @@
 #include "esp_event.h"
 
 #include "cJSON.h"
+#include "data_transmission.h"
+#include "aes_cbc.h"
 
-#define PING_PERIOD (10)
+#define PING_PERIOD (5)
 #define PING_PERIO_MS (PING_PERIOD * 1000)
+#define PIECE_SIZE (20*1024)
 
+#define NO_ENCRYPT (0)
+#define AES_CBC (1)
+#define SPECK_CBC (2)
+#define MIDORI_CBC (3)
+#define SIMON_CBC (4)
+ 
 static const char *TAG = "DATA TRANSMISSION";
 static esp_websocket_client_handle_t client;
+
+
+static bool no_crypto(const uint8_t * input, uint8_t *output, size_t size);
+
+
+bool (*crypto_func[5])(const uint8_t * input, uint8_t * output, size_t size)= {
+    no_crypto,
+    aes_cbc_compress_chunk,
+    no_crypto,
+    no_crypto,
+    no_crypto
+};
+
+
 
 extern const uint8_t start_ecg[] asm("_binary_dump_txt_start");
 extern const uint8_t end_ecg[] asm("_binary_dump_txt_end");
@@ -39,6 +62,10 @@ static send_status_t state_machine = START;
 
 static TimerHandle_t ping_timer;
 
+static bool no_crypto(const uint8_t * input, uint8_t *output, size_t size){
+    memcpy(output,input,size);
+    return true;
+}
 
 static void send_aes_cbc_flash_data(esp_websocket_client_handle_t client){
     ESP_LOGI(TAG,"Sending AES CBC Cipher block data");
@@ -53,6 +80,33 @@ static void send_flash_data(esp_websocket_client_handle_t client){
         ESP_LOGI(TAG,"%d bytes sent",i);
     }
 
+}
+
+static void send_ecg_chunks(esp_websocket_client_handle_t client,uint8_t crypto_algo){
+    //arquivos criptografados precisam ser cifrados em partes
+    //como nao é possível colocar o arquivo inteiro na RAM
+    //será enviado em pedaços de ~20KB
+    size_t data_sent = 0;
+    const size_t data_size = end_ecg - start_ecg;
+    const size_t byte_chunk = PIECE_SIZE;
+    uint8_t send_buffer[PIECE_SIZE];
+
+    //escolhe ponteiro de funcao de criptografia desejada
+    do{
+        //encrypt data piece
+        if((data_sent + PIECE_SIZE) < data_size){
+            crypto_func[crypto_algo]((uint8_t*)&start_ecg+data_sent,send_buffer,PIECE_SIZE);
+        }else{
+            size_t last_piece = (data_sent + PIECE_SIZE) % data_size;
+            crypto_func[crypto_algo]((uint8_t*)&start_ecg+data_sent,send_buffer,last_piece);
+            
+        }
+        //output to send_buffer
+
+        //send send_buffer
+        data_sent += byte_chunk;
+    }while(data_sent < data_size);
+    
 }
 //Cabecalho com dado
 /**
@@ -91,8 +145,9 @@ static void prepare_data_sent(esp_websocket_client_handle_t client,uint8_t type,
 
 static void periodic_ping(TimerHandle_t xTimer)
 {
-    ESP_LOGI(TAG, "Pinging the websocket server");
-    
+    configASSERT( xTimer );
+    ESP_LOGI(TAG, "Send a server application PING");
+    process_state_machine(NULL,0);
 }
 
 /**
@@ -108,43 +163,73 @@ static void periodic_ping(TimerHandle_t xTimer)
  * @param client 
  */
 static void first_message(esp_websocket_client_handle_t client){
-    ESP_LOGI(TAG,"Enviando identificacao");
     char * jsonBuffer;
     cJSON * data = cJSON_CreateObject();
     char mac[9];
+    char mac_str[13]; //6 hex numbers + final pointer
     mac[8] = '\0';
+
     cJSON_AddStringToObject(data,"IP","192.168.10.1");
     esp_read_mac((uint8_t*)&mac[0],ESP_MAC_WIFI_SOFTAP);
-    cJSON_AddStringToObject(data,"MAC",mac);
+    sprintf(mac_str,"%02X%02X%02X%02X%02X%02X",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
+    mac_str[12] = '\0'; 
+    cJSON_AddStringToObject(data,"MAC",mac_str);
     cJSON_AddStringToObject(data,"Paciente","Joao");
     cJSON_AddStringToObject(data,"pubkey","2A3B4B1102BEEF");
 
     jsonBuffer = cJSON_Print(data);
-
+    ESP_LOGI(TAG,"Enviando identificacao \n\r%s",jsonBuffer);
     esp_websocket_client_send_text(client, jsonBuffer, strlen(jsonBuffer), portMAX_DELAY);
-    
     
 }
 
 static void process_json(cJSON * data){
     //processar json recebido dependendo do estado da maquina de estados
-
+    switch (state_machine)
+    {
+    case START:{
+        cJSON * resp = cJSON_GetObjectItemCaseSensitive(data,"response");
+        if(cJSON_IsString(resp) && (resp->valuestring != NULL)){
+            if(strcmp(resp->valuestring,"ok") == 0){
+                state_machine = AUTH;
+            }
+        }
+    }
+        break;
+    case AUTH:{
+        cJSON * resp = cJSON_GetObjectItemCaseSensitive(data,"response");
+        if(cJSON_IsString(resp) && (resp->valuestring != NULL)){
+            if(strcmp(resp->valuestring,"ok") == 0){
+                state_machine = HEADER_RAW;
+            }
+        }
+    }
+        //
+        break;
+    case HEADER_RAW:
+        //
+        break;
+    default:
+        break;
+    }
 }
 
 
 //processa as respostas do websocket
 void process_state_machine(const char * data, size_t data_len){
 
-    cJSON * parse = cJSON_ParseWithLength(data,data_len);
-    if(parse != NULL){
-        ESP_LOGI(TAG,"Valid Json");
-        process_json(parse);
-    }else{
-        ESP_LOGE(TAG,"Invalid JSON");
+    if(data_len != 0){
+            cJSON * parse = cJSON_ParseWithLength(data,data_len);
+        if(parse != NULL){
+            ESP_LOGI(TAG,"Valid Json");
+            process_json(parse);
+        }else{
+            ESP_LOGE(TAG,"Invalid JSON");
+        }
     }
     switch(state_machine){
         case START:
-        state_machine = AUTH;
+        first_message(client);
         break;
         case AUTH:
         state_machine = HEADER_RAW;
@@ -183,7 +268,9 @@ void start_data_transmission(esp_websocket_client_handle_t websocket_client){
     ESP_LOGI(TAG,"My IV %02x %02x %02x",my_iv[0],my_iv[1],my_iv[2]);
     first_message(client);
 
-    ping_timer = xTimerCreate("Websocket Ping Timer", PING_PERIO_MS / portTICK_PERIOD_MS,
-    pdFALSE, NULL, periodic_ping);
-
+    ping_timer = xTimerCreate("App Ping", 10 * 1000 / portTICK_PERIOD_MS,
+    pdTRUE, NULL, periodic_ping);
+    if(ping_timer != NULL){
+        xTimerStart(ping_timer,portMAX_DELAY);
+    }
 }

@@ -25,11 +25,11 @@
 #include "data_transmission.h"
 #include "ec25519.h"
 
-#define NO_DATA_TIMEOUT_SEC 10
+#define NO_DATA_TIMEOUT_SEC 1000
 
 #define CONFIG_WEBSOCKET_URI_FROM_STDIN 0
 
-#define CONFIG_WEBSOCKET_URI "ws://192.168.15.11"
+#define CONFIG_WEBSOCKET_URI "ws://192.168.169.102"
 
 static const char *TAG = "WEBSOCKET";
 
@@ -56,16 +56,21 @@ static void websocket_event_handler(void *handler_args, esp_event_base_t base, i
         ESP_LOGI(TAG, "WEBSOCKET_EVENT_DISCONNECTED");
         break;
     case WEBSOCKET_EVENT_DATA:
-        ESP_LOGI(TAG, "WEBSOCKET_EVENT_DATA");
-        ESP_LOGI(TAG, "Received opcode=%d", data->op_code);
+        ESP_LOGI(TAG, "WEBSOCKET_EVENT op=%d",data->op_code);
         if (data->op_code == 0x08 && data->data_len == 2) {
             ESP_LOGW(TAG, "Received closed message with code=%d", 256*data->data_ptr[0] + data->data_ptr[1]);
+        }else if(data->op_code == 10){
+            // ESP_LOGW(TAG, "We received PONG PONG!");
+        }else if(data->op_code == 9){
+            // We received PING!
         } else {
-            ESP_LOGW(TAG, "Received=%.*s", data->data_len, (char *)data->data_ptr);
+            ESP_LOGW(TAG, "Received %d bytes ->%.*s",data->data_len, data->data_len, (char *)data->data_ptr);
+            //a maquina de estados é processada ao receber dados do websocket
+            process_state_machine(data->data_ptr,data->data_len);
         }
-        ESP_LOGW(TAG, "Total payload length=%d, data_len=%d, current payload offset=%d\r\n", data->payload_len, data->data_len, data->payload_offset);
-        //a maquina de estados é processada ao receber dados do websocket
-        process_state_machine(data->data_ptr,data->data_len);
+        //ESP_LOGW(TAG, "Total payload length=%d, data_len=%d, current payload offset=%d\r\n", data->payload_len, data->data_len, data->payload_offset);
+
+
         xTimerReset(shutdown_signal_timer, portMAX_DELAY);
         break;
     case WEBSOCKET_EVENT_ERROR:
@@ -84,6 +89,7 @@ static void websocket_app_start(void)
 
     websocket_cfg.uri = CONFIG_WEBSOCKET_URI;
     websocket_cfg.port = 8765;
+    websocket_cfg.ping_interval_sec = 5;
 
     ESP_LOGI(TAG, "Connecting to %s...", websocket_cfg.uri);
 
