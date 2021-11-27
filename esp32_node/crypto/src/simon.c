@@ -10,6 +10,7 @@
 #include <limits.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #include "simon.h"
 
 
@@ -388,4 +389,13 @@ void Simon_Decrypt_128(const uint8_t round_limit, const uint8_t *key_schedule, c
         // XOR with Round Key
         *x_word = temp ^ *(round_key_ptr + i);
     }
+}
+
+//criptografia simon funciona em blocos de 64 bits
+//entao fizemos uma funcao adaptada para usar em nossa aplicação como qualquer outras criptografias
+bool simon_encrypt_128_wrapper(const uint8_t *plaintext, uint8_t *ciphertext,uint32_t size){
+    for(uint32_t i = 0; i < size; i+= 64){
+       Simon_Encrypt_128(40,NULL,plaintext+i,ciphertext+i);
+    }
+    return true;
 }

@@ -166,7 +166,7 @@ uint64_t* generateSubkeys(char* key){
     return subKeys;
 }
 // function for encrypting a block using a key
-char* encrypt(char* plaintext, char* key){
+char* present_encrypt(char* plaintext, char* key){
     //generate the subkeys using the function defined above
     uint64_t* subkeys = generateSubkeys(key);
     //convert the plaintext from a Hex String to a 64-bit integer
@@ -195,7 +195,7 @@ char* encrypt(char* plaintext, char* key){
     return fromLongToHexString(state);
 }
 // function for decrypting a block using a key
-char* decrypt(char* ciphertext, char* key){
+char* present_decrypt(char* ciphertext, char* key){
     //generate the subkeys using the function defined above
     uint64_t* subkeys = generateSubkeys(key);
     //convert the plaintext from a Hex String to a 64-bit integer

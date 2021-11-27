@@ -17,6 +17,7 @@
 #include "cJSON.h"
 #include "data_transmission.h"
 #include "aes_cbc.h"
+#include "simon.h"
 
 #define PING_PERIOD (5)
 #define PING_PERIO_MS (PING_PERIOD * 1000)
@@ -34,13 +35,13 @@ static esp_websocket_client_handle_t client;
 
 static bool no_crypto(const uint8_t * input, uint8_t *output, size_t size);
 
-
+//funcoes de criptografia disponiveis
 bool (*crypto_func[5])(const uint8_t * input, uint8_t * output, size_t size)= {
     no_crypto,
     aes_cbc_compress_chunk,
     no_crypto,
     no_crypto,
-    no_crypto
+    simon_encrypt_128_wrapper
 };
 
 

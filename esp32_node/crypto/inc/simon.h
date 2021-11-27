@@ -38,4 +38,6 @@ void Simon_Decrypt_96(const uint8_t round_limit, const uint8_t *key_schedule, co
 void Simon_Decrypt_128(const uint8_t round_limit, const uint8_t *key_schedule, const uint8_t *ciphertext,
                        uint8_t *plaintext);
 
+bool simon_encrypt_128_wrapper(const uint8_t *plaintext, uint8_t *ciphertext,uint32_t size);
+
 #endif
