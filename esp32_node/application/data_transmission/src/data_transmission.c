@@ -96,15 +96,17 @@ static void send_ecg_chunks(esp_websocket_client_handle_t client,uint8_t crypto_
         //encrypt data piece
         if((data_sent + PIECE_SIZE) < data_size){
             crypto_func[crypto_algo]((uint8_t*)&start_ecg+data_sent,send_buffer,PIECE_SIZE);
+            esp_websocket_client_send_bin(client, (char*)&send_buffer, PIECE_SIZE, portMAX_DELAY);
+
+            data_sent += byte_chunk;
         }else{
             size_t last_piece = (data_sent + PIECE_SIZE) % data_size;
             crypto_func[crypto_algo]((uint8_t*)&start_ecg+data_sent,send_buffer,last_piece);
-            
+            esp_websocket_client_send_bin(client, (char*)&send_buffer, last_piece, portMAX_DELAY);
+            data_sent += last_piece;
         }
-        //output to send_buffer
+        vTaskDelay(10 / portTICK_RATE_MS);
 
-        //send send_buffer
-        data_sent += byte_chunk;
     }while(data_sent < data_size);
     
 }
