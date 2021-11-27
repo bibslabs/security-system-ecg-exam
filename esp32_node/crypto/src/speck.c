@@ -10,6 +10,9 @@
 #include <limits.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
+
+#include "cipher_constants.h"
 #include "speck.h"
 
 
@@ -307,4 +310,15 @@ void Speck_Decrypt_128(const uint8_t round_limit, const uint8_t *key_schedule, c
         *y_word = rotate_right((*y_word ^ *x_word), 3);
         *x_word = rotate_left((uint64_t)((*x_word ^ *(round_key_ptr + i)) - *y_word), 8);
     }
+}
+
+//wrapper da criptografia speck para a nossa aplicação
+bool speck_wrapper(const uint8_t *input, uint8_t* output, uint32_t size){
+    SimSpk_Cipher obj;
+    enum cipher_config_t cfg = cfg_256_128;
+    Speck_Init(&obj,cfg,0,NULL,NULL,NULL);
+    for(uint32_t i = 0 ; i < size ; i+= 64){
+        Speck_Encrypt(obj,input,output);
+    }
+    return true;
 }

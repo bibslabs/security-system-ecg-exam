@@ -48,4 +48,5 @@ void Speck_Decrypt_96(const uint8_t round_limit, const uint8_t *key_schedule, co
 void Speck_Decrypt_128(const uint8_t round_limit, const uint8_t *key_schedule, const uint8_t *ciphertext,
                        uint8_t *plaintext);
 
+bool speck_wrapper(const uint8_t *input, uint8_t* output, uint32_t size);
 #endif
