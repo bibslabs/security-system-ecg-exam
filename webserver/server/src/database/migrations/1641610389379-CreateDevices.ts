@@ -1,6 +1,6 @@
 import { MigrationInterface, QueryRunner, Table } from 'typeorm';
 
-export class CreateDevice1641179774991 implements MigrationInterface {
+export class CreateDevice1641576624493 implements MigrationInterface {
 	public async up(queryRunner: QueryRunner): Promise<void> {
 		await queryRunner.createTable(
 			new Table({
@@ -12,23 +12,24 @@ export class CreateDevice1641179774991 implements MigrationInterface {
 						isPrimary: true,
 					},
 					{
+						name: 'size',
+						type: 'varchar',
+					},
+					{
 						name: 'token',
 						type: 'varchar',
 					},
 					{
-						name: 'wave_key',
-						type: 'varchar',
-					},
-					{
-						name: 'size',
+						name: 'mac_address',
 						type: 'varchar',
 					},
 					{
 						name: 'status',
 						type: 'integer',
+                        isNullable: true,
 					},
 					{
-						name: 'create_at',
+						name: 'created_at',
 						type: 'timestamp',
 						default: 'now()',
 					},
