@@ -26,6 +26,6 @@ export class CreateKeys1641738879036 implements MigrationInterface {
 	}
 
 	public async down(queryRunner: QueryRunner): Promise<void> {
-        await queryRunner.dropTable('keys');
-    }
+		await queryRunner.dropTable('keys');
+	}
 }

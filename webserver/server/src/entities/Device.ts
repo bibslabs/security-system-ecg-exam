@@ -1,15 +1,9 @@
-import {
-	Entity,
-	Column,
-	CreateDateColumn,
-	PrimaryColumn,
-} from 'typeorm';
+import { Entity, Column, CreateDateColumn, PrimaryColumn } from 'typeorm';
 
-import { v4 as uuid }  from 'uuid';
+import { v4 as uuid } from 'uuid';
 
 @Entity('devices')
 class Device {
-
 	@PrimaryColumn()
 	id: string;
 
@@ -19,23 +13,20 @@ class Device {
 	@Column()
 	token: string;
 
-    @Column()
-    socket_address: string;
+	@Column()
+	mac_address: string;
 
 	@Column()
-    wave_key: string;
-    
-    @Column()
 	status: number;
 
 	@CreateDateColumn()
 	created_at: Date;
 
-    constructor(){
-        if(!this.id) {
-            this.id = uuid();
-        }
-    }
+	constructor() {
+		if (!this.id) {
+			this.id = uuid();
+		}
+	}
 }
 
 export { Device };

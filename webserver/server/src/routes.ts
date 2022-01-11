@@ -1,23 +1,16 @@
-import { Router } from "express";
-import { getCustomRepository } from "typeorm";
-
-import { DevicesRepository } from "./repositories/Devicesrepository";
+import { request, Router } from 'express';
+// import { DevicesRepository } from "./repositories/DevicesRepository";
+// import { getCustomRepository } from "typeorm";
+import { DevicesController } from './controllers/DevicesController';
+import { KeysController } from './controllers/KeysController';
 
 const routes = Router();
 
-routes.post("/devices", async(request, response) => {
-    const {size, token, socket_address} = request.body;
-    
-    const devicesRepository = getCustomRepository(DevicesRepository);
+const devicesController = new DevicesController();
+const keysController = new KeysController();
 
-    const devices = devicesRepository.create({
-        size,
-        token,
-        socket_address
-    })
-
-    await devicesRepository.save(devices)
-});
+routes.post('/devices', devicesController.create);
+routes.post('/keys', keysController.create);
 
 export { routes };
 
