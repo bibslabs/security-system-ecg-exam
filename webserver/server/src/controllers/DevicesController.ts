@@ -5,6 +5,7 @@ import { DevicesRepository } from '../repositories/DevicesRepository'
 class DevicesController {
     async create(request: Request, response: Response) {
         const { token, size, mac_address } = request.body;
+        
         const deviceRepository = getCustomRepository(DevicesRepository);
     
         const device = deviceRepository.create({
