@@ -1,7 +1,7 @@
 // cipher_constants.h
 #ifndef CIPHER_CONSTANTS_H
 #define CIPHER_CONSTANTS_H
-
+#include "stdint.h"
 enum mode_t { ECB, CTR, CBC, CFB, OFB };
 
 static const uint8_t block_sizes[] = {32, 48, 48, 64, 64, 96, 96, 128, 128, 128};

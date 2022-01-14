@@ -29,6 +29,8 @@
 #define SPECK_CBC (2)
 #define MIDORI_CBC (3)
 #define SIMON_CBC (4)
+#define PRESENT_CBC (5)
+#define DES3    (6)
  
 static const char *TAG = "DATA TRANSMISSION";
 static esp_websocket_client_handle_t client;
@@ -241,7 +243,7 @@ void process_state_machine(const char * data, size_t data_len){
 
         case HEADER_RAW:
         //enviar cabecalho de dado sem criptografia
-        prepare_data_sent(client,0,end_ecg - start_ecg,NULL,NULL);
+        prepare_data_sent(client,NO_ENCRYPT,end_ecg - start_ecg,NULL,NULL);
         break;
         case SEND_RAW:
         send_flash_data(client);

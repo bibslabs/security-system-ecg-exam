@@ -25,8 +25,8 @@
    the config you want - ie #define EXAMPLE_WIFI_SSID "mywifissid"
 */
 //wifi 1
-#define EXAMPLE_ESP_WIFI_SSID      "FLIN_RFE 201 A"
-#define EXAMPLE_ESP_WIFI_PASS      "LinhaLIVRE314089"
+#define EXAMPLE_ESP_WIFI_SSID      "Marcon AP"
+#define EXAMPLE_ESP_WIFI_PASS      "victor378"
 #define EXAMPLE_ESP_MAXIMUM_RETRY  3
 
 //wifi 2
@@ -43,7 +43,7 @@ static EventGroupHandle_t s_wifi_event_group;
 #define WIFI_CONNECTED_BIT BIT0
 #define WIFI_FAIL_BIT      BIT1
 
-static const char *TAG = "wifi station";
+static const char *TAG = "WIFI CONNECTION";
 
 static int s_retry_num = 0;
 

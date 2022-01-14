@@ -4,7 +4,8 @@ cmake_minimum_required(VERSION 3.5)
 
 # (Not part of the boilerplate)
 # This example uses an extra component for common functions such as Wi-Fi and Ethernet connection.
-set(EXTRA_COMPONENT_DIRS common application/wifi application/data_transmission crypto application/packet_creator )
+set(EXTRA_COMPONENT_DIRS common application/wifi application/data_transmission crypto application/packet_creator 
+    INC_DIRS crypto/inc)
 
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
