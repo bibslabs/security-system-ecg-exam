@@ -2,8 +2,8 @@ import React from "react";
 
 import logoImg from '../../assets/images/logo-header.png'
 
-import loginIcon from "../../assets/images/icons/fi-rr-sign-in-alt.svg"
-import adminIcon from "../../assets/images/icons/fi-rr-incognito.svg"
+import loginIcon from "../../assets/images/icons/fi-rr-stethoscope.svg"
+import adminIcon from "../../assets/images/icons/fi-rr-following.svg"
 
 import './styles.css'
 
