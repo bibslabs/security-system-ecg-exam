@@ -2,13 +2,13 @@
 	font-size: 60%;
 
 	--color-background: #dfe9e9;
-	--color-primary-lighter: #00f3fc;
+	--color-primary-lighter: #02ebf3;
 	--color-primary-light: #02d1d8;
 	--color-primary: #00bec5;
 	--color-primary-dark: #03a9af;
 	--color-primary-darker: #008c91;
-	/* --color-secundary: #04d361;
-	--color-secundary-dark: #04bf58; */
+	--color-secundary: #04a3d3;
+	--color-secundary-dark: #08789b;
 	--color-title-in-primary: #1d969c;
 	--color-text-in-primary: #00f7ff;
 	--color-text-title: #1e6690;
@@ -46,7 +46,7 @@ body,
 input,
 button,
 textarea {
-	font: 500 1.6rem Roboto;
+	font: 300 1.6rem Roboto;
 }
 
 .container {
