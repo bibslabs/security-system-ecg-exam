@@ -1,4 +1,6 @@
 import React from "react";
+import { Link } from 'react-router-dom'
+
 
 import logoImg from '../../assets/images/logo-header.png'
 
@@ -17,15 +19,15 @@ function Landing() {
                </div>
                
                <div className="buttons-container">
-                    <a href="" className="login">
+                    <Link to="/login" className="login">
                         <img src={loginIcon} alt="Login" />
                         Login
-                    </a> 
+                    </Link> 
 
-                    <a href="" className="admin">
+                    <Link to="/admin" className="admin">
                         <img src={adminIcon} alt="Admin Login" />
                         Admin
-                    </a>
+                    </Link>
                </div>
            </div>
        </div> 

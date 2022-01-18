@@ -1,6 +1,8 @@
 import React from 'react';
-import Landing from './pages/Landing';
-import './assets/styles/global.css'
+
+import Rotas from './routes';
+
+import './assets/styles/global.css';
 
 function App() {
   return (
@@ -8,7 +10,7 @@ function App() {
     //   <h1>Exame ECG</h1>
     //   <button type='button'>Iniciar conexão</button>
     // </div>
-    <Landing />
+    <Rotas />
   );
 }
 

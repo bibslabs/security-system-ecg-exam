@@ -2,7 +2,7 @@ import React from "react";
 
 function Login() {
     return (
-        <h1>Bem vindo</h1>
+        <h1>Bem vindo a tela de login</h1>
     )
 }
 
