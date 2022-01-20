@@ -1,21 +1,24 @@
 import { Request, Response } from 'express';
-import { getCustomRepository } from 'typeorm';
-import { AdminsRepository } from '../repositories/AdminsRepository';
+import { AdminsServices } from '../services/AdminsServices';
 
 class AdminsController {
 	async create(request: Request, response: Response): Promise<Response> {
 		const { username, password } = request.body;
 
-		const adminRepository = getCustomRepository(AdminsRepository);
+		const adminsServices = new AdminsServices();
 
-		const admin = await adminRepository.create({
-			username,
-			password,
-		});
-
-		await adminRepository.save(admin);
-
-		return response.json(admin);
+		try {
+			const admin = await adminsServices.create({
+				username,
+				password,
+			});
+	
+			return response.json(admin);
+		} catch (err) {
+			return response.status(400).json({
+				message: err.message,
+			});
+		}
 	}
 }
 

@@ -18,22 +18,19 @@ class AdminsServices {
 		const adminExist = await this.adminsRepository.findOne({
 			username,
 		});
-		/**TODO:
-		 * Está salvando administradores com o memso username/email
-		 */
 
 		if (adminExist) {
-			return adminExist;
-		} else {
-			const admin = this.adminsRepository.create({
-				username,
-				password,
-			});
-
-			await this.adminsRepository.save(admin);
-
-			return admin;
+			throw new Error("Já existe um administrador com esse username");
 		}
+
+		const admin = this.adminsRepository.create({
+			username,
+			password,
+		});
+
+		await this.adminsRepository.save(admin);
+
+		return admin;
 	}
 }
 
