@@ -1,0 +1,28 @@
+#page-admin {
+	width: 100vw;
+	height: 100vh;
+
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	flex-direction: column;
+
+	color: var(--color-text-in-primary);
+	background: var(--color-box-base);
+}
+
+button {
+	margin-top: 4rem;
+	background: var(--color-secundary);
+	width: 15rem;
+	height: 7rem;
+	border-radius: 0.8rem;
+	font: 700 2rem Ubuntu;
+
+	/* text-decoration: none; */
+	color: var(--color-button-text);
+	font-size: 2rem !important;
+	cursor: pointer;
+
+	transition: backgoud-color 0.4s;
+}
