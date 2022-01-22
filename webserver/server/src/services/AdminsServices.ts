@@ -32,6 +32,10 @@ class AdminsServices {
 
 		return admin;
 	}
+
+	async list() {
+		return this.adminsRepository.find();
+	}
 }
 
 export { AdminsServices };

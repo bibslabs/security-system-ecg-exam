@@ -15,6 +15,8 @@ routes.post('/devices', devicesController.create);
 routes.post('/keys', keysController.create);
 routes.post('/admin', adminsController.create);
 
+routes.get('/admin', adminsController.list);
+
 export { routes };
 
 /**

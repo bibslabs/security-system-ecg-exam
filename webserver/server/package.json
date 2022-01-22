@@ -8,10 +8,12 @@
     "typeorm": "ts-node-dev node_modules/typeorm/cli.js"
   },
   "dependencies": {
+    "cors": "^2.8.5",
     "express": "^4.17.2",
     "mysql": "^2.18.1",
     "reflect-metadata": "^0.1.13",
     "socket.io": "^4.4.1",
+    "socket.io-client": "^4.4.1",
     "sqlite": "^4.0.23",
     "sqlite3": "^5.0.2",
     "typeorm": "^0.2.41",
