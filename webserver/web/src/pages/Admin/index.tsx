@@ -1,17 +1,27 @@
 import React, {useState, FormEvent} from "react";
 
+import { io } from "socket.io-client"
+
 import api from "../../services/api";
 
 import './styles.css';
 
+// const socket = io('http://localhost:3333');
+
 function Admin() {
     // const [username, setUsername] = useState('');
     const handleSubmit = async () => {
-
         try {
-            const response =  await api.get('/admin',{})
 
-            console.log(response);
+            const socket = io('http://localhost:3333');
+            console.log(socket);
+
+            
+            // const response =  await api.get('/admin',{})
+            // socket.on("message", function(msg){
+            //     console.log("socket esta funcionando no front:", msg)
+            // })
+            // console.log(response);
         } catch (error) {
             console.error(error);
         }

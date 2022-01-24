@@ -9,7 +9,16 @@ import { routes } from "./routes";
 const app = express(); 
 
 const http = createServer(app); //criando protocolo http
-const io = new Server(http); //criando protocolo websocket
+// const io = new Server(http); //criando protocolo websocket
+const io = require("socket.io")(http, {
+    cors: {
+        origin: "http://localhost:3000",
+        methods: ['GET', 'POST'],
+        allowedHeaders: ["my-custom-header"],
+        credentials: true
+    }
+})
+
 app.use(cors());
 
 io.on("connection", (socket: Socket)=> {

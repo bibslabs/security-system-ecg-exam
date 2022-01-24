@@ -1,4 +1,4 @@
-import { request, Router } from 'express';
+import { request, Router, response } from 'express';
 // import { DevicesRepository } from "./repositories/DevicesRepository";
 // import { getCustomRepository } from "typeorm";
 import { AdminsController } from './controllers/AdminsController';
@@ -15,7 +15,11 @@ routes.post('/devices', devicesController.create);
 routes.post('/keys', keysController.create);
 routes.post('/admin', adminsController.create);
 
-routes.get('/admin', adminsController.list);
+// routes.get('/admin', adminsController.list);
+// routes.get('/admin', (request, response) => {
+    
+// });
+
 
 export { routes };
 

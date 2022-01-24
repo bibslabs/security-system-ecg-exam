@@ -21,13 +21,16 @@ class Connection {
 
 	@JoinColumn({ name: 'device_id' })
 	@ManyToOne(() => Device)
-	device_id: Device;
+	device: Device;
+
+    @Column()
+    device_id: string;
 
 	@CreateDateColumn()
 	created_at: Date;
 
 	@UpdateDateColumn()
-	updated_at: Date;
+	update_at: Date;
 
 	constructor() {
 		if (!this.id) {

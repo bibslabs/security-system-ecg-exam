@@ -16,7 +16,6 @@ class ConnectionsService {
     }
 
     async create({socket_id, device_id, id}: IConnectionCreate){
-        // TODO: alguma coisa esta dando errado com a relação many to one
         const connection = this.connectionsRepository.create({
             socket_id,
             device_id,
