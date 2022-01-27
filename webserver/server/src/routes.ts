@@ -11,10 +11,11 @@ const devicesController = new DevicesController();
 const keysController = new KeysController();
 const adminsController = new AdminsController();
 
+routes.post('/admin', adminsController.create);
 routes.post('/devices', devicesController.create);
 routes.post('/keys', keysController.create);
-routes.post('/admin', adminsController.create);
 
+routes.get('/devices', devicesController.list);
 // routes.get('/admin', adminsController.list);
 // routes.get('/admin', (request, response) => {
     

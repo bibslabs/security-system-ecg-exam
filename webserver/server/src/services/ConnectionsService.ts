@@ -26,6 +26,10 @@ class ConnectionsService {
 
         return connection;
     }
+
+    async list() {
+		return this.connectionsRepository.find();
+	}
 }
 
 export { ConnectionsService }

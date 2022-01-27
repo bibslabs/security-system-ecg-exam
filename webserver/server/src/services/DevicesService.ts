@@ -27,6 +27,9 @@ class DevicesService {
         return device;
     }
 
+    async list() {
+		return this.devicesRepository.find();
+	}
 
 }
 

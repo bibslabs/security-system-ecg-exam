@@ -1386,6 +1386,11 @@ rc@^1.2.7:
     minimist "^1.2.0"
     strip-json-comments "~2.0.1"
 
+react-multi-select-component@^4.2.1:
+  version "4.2.1"
+  resolved "https://registry.yarnpkg.com/react-multi-select-component/-/react-multi-select-component-4.2.1.tgz#db4f2c9e8578b2832d46f1224b1d71664242cd6e"
+  integrity sha512-wRteBq1pqKLlYX/ob8I1aBapPokQiRzOJzVqJDVVTHb0Ap/QWXVE4OXE2xwhVf3qmmYvOguvOKQQbQiEYxhONA==
+
 readable-stream@2.3.7, readable-stream@^2.0.6:
   version "2.3.7"
   resolved "https://registry.yarnpkg.com/readable-stream/-/readable-stream-2.3.7.tgz#1eca1cf711aef814c04f62252a36a62f6cb23b57"
