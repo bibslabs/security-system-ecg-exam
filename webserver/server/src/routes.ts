@@ -5,6 +5,7 @@ import { AdminsController } from './controllers/AdminsController';
 import { DevicesController } from './controllers/DevicesController';
 import { KeysController } from './controllers/KeysController';
 import { ConnectionsController } from './controllers/ConnectionsController';
+import { PatientsController } from './controllers/PatientsController';
 
 const routes = Router();
 
@@ -12,13 +13,17 @@ const devicesController = new DevicesController();
 const keysController = new KeysController();
 const adminsController = new AdminsController();
 const connectionsController = new ConnectionsController();
+const patientsController = new PatientsController();
 
 routes.post('/admin', adminsController.create);
 routes.post('/devices', devicesController.create);
 routes.post('/keys', keysController.create);
 routes.post('/connections', connectionsController.create);
+routes.post('/patients', patientsController.create);
 
 routes.get('/devices', devicesController.list);
+routes.get('/connections', connectionsController.list);
+routes.get('/patients', patientsController.list);
 // routes.get('/admin', adminsController.list);
 // routes.get('/admin', (request, response) => {
     

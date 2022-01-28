@@ -12,7 +12,7 @@ class AdminsController {
 				username,
 				password,
 			});
-	
+
 			return response.json(admin);
 		} catch (err) {
 			return response.status(400).json({
@@ -23,10 +23,10 @@ class AdminsController {
 	async list(request: Request, response: Response): Promise<Response> {
 		const adminsServices = new AdminsServices();
 
-		try{
+		try {
 			const admins = await adminsServices.list();
 
-			return response.json(admins);				
+			return response.json(admins);
 		} catch (err) {
 			return response.status(400).json({
 				message: err.message,
