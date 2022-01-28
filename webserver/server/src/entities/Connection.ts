@@ -11,7 +11,7 @@ import {
 import { v4 as uuid } from 'uuid';
 import { Device } from './Device';
 
-@Entity('connection')
+@Entity('connections')
 class Connection {
 	@PrimaryColumn()
 	id: string;

@@ -4,16 +4,19 @@ import { request, Router, response } from 'express';
 import { AdminsController } from './controllers/AdminsController';
 import { DevicesController } from './controllers/DevicesController';
 import { KeysController } from './controllers/KeysController';
+import { ConnectionsController } from './controllers/ConnectionsController';
 
 const routes = Router();
 
 const devicesController = new DevicesController();
 const keysController = new KeysController();
 const adminsController = new AdminsController();
+const connectionsController = new ConnectionsController();
 
 routes.post('/admin', adminsController.create);
 routes.post('/devices', devicesController.create);
 routes.post('/keys', keysController.create);
+routes.post('/connections', connectionsController.create);
 
 routes.get('/devices', devicesController.list);
 // routes.get('/admin', adminsController.list);
