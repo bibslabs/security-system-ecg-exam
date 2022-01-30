@@ -61,7 +61,7 @@
 
 .buttons-container a img {
 	height: 3rem;
-	filter: invert(1);
+	/* filter: invert(1); */
 	margin-right: 1rem;
 }
 

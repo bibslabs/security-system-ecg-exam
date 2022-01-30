@@ -24,12 +24,12 @@ function Landing() {
                
                <div className="buttons-container">
                     <Link to="/login" className="login">
-                        <img src={loginIcon} alt="Login" />
+                        <img src={loginIcon} className="icon" alt="Login" />
                         Login
                     </Link> 
 
                     <Link to="/admin" className="admin">
-                        <img src={adminIcon} alt="Admin Login" />
+                        <img src={adminIcon} className="icon" alt="Admin Login" />
                         Admin
                     </Link>
                </div>

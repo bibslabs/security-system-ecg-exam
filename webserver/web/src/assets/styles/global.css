@@ -1,7 +1,7 @@
 :root {
 	font-size: 60%;
 
-	--color-background: #dfe9e9;
+	--color-background: #ffff;
 	--color-primary-lighter: #02ebf3;
 	--color-primary-light: #02d1d8;
 	--color-primary: #00bec5;
@@ -52,6 +52,10 @@ textarea {
 .container {
 	width: 90vw;
 	max-width: 700px;
+}
+
+.icon {
+	filter: invert(1);
 }
 
 @media (min-width: 700px) {

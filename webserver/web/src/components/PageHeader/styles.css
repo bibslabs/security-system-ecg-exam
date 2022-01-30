@@ -1,0 +1,49 @@
+.page-header {
+	display: flex;
+	flex-direction: column;
+	background-color: var(--color-box-base);
+}
+
+.page-header .top-bar-container {
+	width: 90% !important;
+	margin: 0 auto;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	color: var(--color-text-in-primary);
+	padding: 1.6rem;
+}
+
+.page-header .top-bar-container > img {
+	height: 10rem;
+	margin-bottom: -2rem;
+}
+
+.page-header .top-bar-container a {
+	/* height: 1rem; */
+	align-self: flex-start;
+	transition: opacity 0.9s;
+}
+
+.page-header .top-bar-container a img {
+	height: 3rem;
+	filter: invert(49%) sepia(97%) saturate(1033%) hue-rotate(142deg)
+		brightness(96%) contrast(101%) !important;
+	transition: opacity 0.2s;
+}
+
+.page-header .top-bar-container a img:hover {
+	opacity: 0.6;
+}
+
+.page-header .header-content {
+	width: 90%;
+	margin: 0 auto;
+	position: relative;
+	margin: -4rem auto 2rem 4rem;
+}
+
+.page-header .header-content strong {
+	font: 700 4rem Ubuntu;
+	color: var(--color-primary);
+}
