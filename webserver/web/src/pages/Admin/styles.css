@@ -43,3 +43,9 @@ button {
 button:hover {
 	background: var(--color-primary-dark);
 }
+
+@media (min-width: 700px) {
+	#page-admin {
+		max-width: 100%;
+	}
+}

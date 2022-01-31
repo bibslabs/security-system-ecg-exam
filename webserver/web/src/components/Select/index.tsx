@@ -1,17 +1,32 @@
-import React, { SelectHTMLAttributes } from "react";
 
-// interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
-//     name: string;
-//     label: string;
-// }
+import React, { SelectHTMLAttributes } from 'react';
 
-// const Select: React.FC<SelectProps> = ({label, name, ...rest}) => {
-//     return (
-//         <div className= "Select-block">
-//             <label htmlFor={name>{label}</label>}></label>
-//             <Select type="text" id={name} {...rest}/>
-//         </div>
-//     ); 
-// }
+import './styles.css';
 
-// export default Select;
+interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
+  name: string;
+  label: string;
+  options: Array<{
+    value: string;
+    label: string;
+  }>;
+}
+
+//** TODO: problema no select, não seleciona a opção escolhida*/
+
+const Select: React.FC<SelectProps> = ({ label, name, options, ...rest }) => {
+  return (
+    <div className="select-block">
+      <label htmlFor={name}>{label}</label>
+      <select value="" id={name} {...rest}>
+        <option value="" disabled selected hidden>Selecione uma opção</option>
+
+        {options.map(option => {
+          return <option key={option.value} value={option.value}>{option.label}</option>
+        })}
+      </select>
+    </div>
+  );
+}
+
+export default Select;

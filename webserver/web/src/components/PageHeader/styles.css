@@ -47,3 +47,20 @@
 	font: 700 4rem Ubuntu;
 	color: var(--color-primary);
 }
+
+@media (min-width: 700px) {
+	/* #page-admin {
+		max-width: 100%;
+	} */
+
+	.page-header .header-content {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		margin-left: 8.9rem;
+	}
+
+	.page-header .header-content strong {
+		font-size: 4.5rem;
+	}
+}
