@@ -6,7 +6,11 @@ import './styles.css';
 import logoImg from '../../assets/images/logo-header.png';
 import backIcon from '../../assets/images/icons/fi-rr-arrow-left.svg';
 
-function PageHeader() {
+interface PageHeaderProps {
+	title: string;
+}
+
+const PageHeader: React.FC<PageHeaderProps> = (props) => {
     return (
 			<header className="page-header">
 				<div className="top-bar-container">
@@ -17,7 +21,7 @@ function PageHeader() {
 				</div>
 
 				<div className="header-content">
-					<strong>Exame ECG</strong>
+					<strong>{props.title}</strong>
 				</div>
 			</header>
     );

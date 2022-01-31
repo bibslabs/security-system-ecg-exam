@@ -1,0 +1,16 @@
+#page-login {
+	width: 100vw;
+	height: 100vh;
+}
+
+.title-container {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	margin: 5rem auto;
+}
+
+.title-container h3 {
+	font: 500 Roboto;
+	color: var(--color-primary);
+}

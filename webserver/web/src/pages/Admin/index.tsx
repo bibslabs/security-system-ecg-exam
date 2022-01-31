@@ -31,7 +31,7 @@ function Admin() {
 
 	return (
 		<div id="page-admin" className="container">
-			<PageHeader />
+			<PageHeader title="Exame ECG" />
 
 			<main id="main">
 				<div className="title-container">
