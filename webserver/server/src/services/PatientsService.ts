@@ -50,14 +50,22 @@ class PatientsService {
 			sex,
 		});
 
-        await this.patientsRepository.save(patient);
+		await this.patientsRepository.save(patient);
 
-        return patient;
+		return patient;
 	}
 
-    async list() {
-        return this.patientsRepository.find();
-    }
+	async list() {
+		return this.patientsRepository.find();
+	}
+
+	async listByPatientID(id: string) {
+		const listPatient = await this.patientsRepository.find({
+			where: { id },
+		});
+
+		return listPatient;
+	}
 }
 
 export { PatientsService };

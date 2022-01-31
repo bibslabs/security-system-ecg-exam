@@ -32,6 +32,22 @@ class DevicesController {
 			});
 		}
 	}
+
+	async showByDeviceID(request: Request, response: Response) {
+		try {
+			const { id } = request.params;
+
+			const devicesServices = new DevicesService();
+
+			const device = await devicesServices.listByDeviceID(id);
+
+			return response.json(device);
+		} catch (err) {
+			return response.status(400).json({
+				message: err.message,
+			});
+		}
+	}
 }
 
 export { DevicesController };

@@ -49,5 +49,21 @@ class PatientsController {
 			});
 		}
 	}
+
+	async showByPatientID(request: Request, response: Response) {
+		try {
+			const { id } = request.params;
+
+			const patientServices = new PatientsService();
+
+			const patient = await patientServices.listByPatientID(id);
+
+			return response.json(patient);
+		} catch (err) {
+			return response.status(400).json({
+				message: err.message,
+			});
+		}
+	}
 }
 export { PatientsController };
