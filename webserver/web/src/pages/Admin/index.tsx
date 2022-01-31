@@ -6,7 +6,6 @@ import './styles.css';
 import api from '../../services/api';
 
 import '../../components/Dropdown/index';
-import Example from '../../components/Dropdown/index';
 import PageHeader from '../../components/PageHeader';
 import Select from '../../components/Select';
 
@@ -14,6 +13,8 @@ import Select from '../../components/Select';
 
 function Admin() {
 	// const [username, setUsername] = useState('');
+	const [patientId, setPatient] = useState('');
+	const [deviceId, setDevice] = useState('');
 	async function createExam(e: FormEvent) {
 		e.preventDefault();
 	
@@ -60,8 +61,10 @@ function Admin() {
 				<div className="select-container">
 					<form className="data-exam" onSubmit={createExam}>
 						<Select 
-							name="name-patient" 
-							label="Nome do Paciente" 
+							name="patientId" 
+							label="Nome do Paciente"
+							value={patientId}
+							onChange={(e) => { setPatient(e.target.value) }} 
 							options={[
 								{value: '30e0c587-b14c-48e0-8007-c302ba3a835a', label:'Agustín Madrigal'},
 								{value: '09ca1607-6be1-45f4-97d2-edf6dfb9b537', label:'Alma Madrigal'},
@@ -76,20 +79,17 @@ function Admin() {
 								{value: '6a80c14b-71e9-4086-b239-b4904a469669', label:'Luiza Madrigal'},
 								{value: '6038594f-4508-4fee-8261-05c0d8d13c8f', label:'Mirabel Madrigal'},
 								{value: 'd64cc2b3-d229-442d-b12b-cb6a1bf28253', label:'Pepa Madrigal'},
-								{value: 'd64cc2b3-d229-442d-b12b-cb6a1bf28253', label:'Pepa Madrigal'},
 							]} />
 							<Select 
-							name="device" 
-							label="Dispositivo Usado" 
+							name="deviceId" 
+							label="Dispositivo Usado"
+							value={deviceId}
+							onChange={(e) => { setDevice(e.target.value) }}
 							options={[
 								{value: 'cb6e2737-32c7-40e2-aa22-82c62a3107a4', label:'Tamanho P'},
 								{value: 'ab2b4492-c089-4a4f-a532-a6f725f9eb83', label:'Tamanho M'},
 								{value: '2be5eaef-0857-4892-b184-bdb31a38edf0', label:'Tamanho G'},
 							]} />
-							{/* <select>
-								<option>a</option>
-								<option>b</option>
-							</select> */}
 					</form>
 				</div>
 
