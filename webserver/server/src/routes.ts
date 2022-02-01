@@ -18,8 +18,8 @@ const patientsController = new PatientsController();
 routes.post('/admin', adminsController.create);
 
 routes.post('/devices', devicesController.create);
-routes.get('/devices', devicesController.list);
 routes.get('/devices/:id', devicesController.showByDeviceID);
+// routes.get('/devices', devicesController.list);
 
 routes.post('/keys', keysController.create);
 
@@ -27,8 +27,10 @@ routes.post('/connections', connectionsController.create);
 routes.get('/connections', connectionsController.list);
 
 routes.post('/patients', patientsController.create);
-routes.get('/patients', patientsController.list);
 routes.get('/patients/:id', patientsController.showByPatientID);
+// routes.get('/patients', patientsController.list);
+
+
 // routes.get('/admin', adminsController.list);
 // routes.get('/admin', (request, response) => {
 

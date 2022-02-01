@@ -34,8 +34,10 @@ class DevicesService {
 	}
 
 	async listByDeviceID(id:string) {
-		const listDevice = await this.devicesRepository.find({
-			where: { id },
+		const listDevice = await this.devicesRepository.findOne({
+			where: {
+				id
+			}
 		});
 
 		return listDevice;

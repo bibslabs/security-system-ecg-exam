@@ -60,7 +60,7 @@ class PatientsService {
 	}
 
 	async listByPatientID(id: string) {
-		const listPatient = await this.patientsRepository.find({
+		const listPatient = await this.patientsRepository.findOne({
 			where: { id },
 		});
 
