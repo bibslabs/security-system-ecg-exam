@@ -20,9 +20,11 @@ const io = require('socket.io')(http, {
 });
 
 app.use(cors());
+// TODO: ver como fazer esse put para atualizar o dado da tabela sempre que atualizar o socket id
 
 io.on('connection', (socket: Socket) => {
 	console.log('conectado via websocket', socket.id);
+	// app.put(`/socket/ea9398ce-e2b3-41bd-94e0-3cfc67a2791f/socket_id/${socket.id}`)
 });
 
 // app.get("/", (request, response) => {
