@@ -23,21 +23,21 @@ app.use(cors());
 // TODO: ver como fazer esse put para atualizar o dado da tabela sempre que atualizar o socket id
 
 io.on('connection', (socket: Socket) => {
-	console.log('conectado via websocket', socket.id);
 	// app.put(`/socket/ea9398ce-e2b3-41bd-94e0-3cfc67a2791f/socket_id/${socket.id}`)
+	console.log('socket criado no http', socket.id);
+	socket.emit('message', 'hello14');
+
+	socket.on('hello', (arg) => {
+		console.log(arg); // world
+	});
+
+	socket.on('message-esp', (arg) => {
+		console.log(arg); // world
+		socket.emit('message-client', arg);
+	});
+
+	// socket.disconnect();
 });
-
-// app.get("/", (request, response) => {
-//     return response.json({
-//         message: "olá mundo"
-//     });
-// });
-
-// app.post("/", (request, response) => {
-//     return response.json({
-//         message: "Bom dia"
-//     })
-// })
 
 app.use(express.json());
 

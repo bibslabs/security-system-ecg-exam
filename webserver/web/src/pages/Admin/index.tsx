@@ -3,35 +3,62 @@ import { io } from 'socket.io-client';
 
 import './styles.css';
 
-import '../../services/socket';
+// import socket from '../../services/socket';
 import api from '../../services/api';
 
 import PageHeader from '../../components/PageHeader';
 import Select from '../../components/Select';
-
-// const socket = io('http://localhost:3333');
+import { Link } from 'react-router-dom';
 
 function Admin() {
 	const [patientId, setPatient] = useState('');
 	const [deviceId, setDevice] = useState('');
-	
 
 	const getElements = async () => {
 		try {
-			const response = await api.get(`/devices/${deviceId}`, {});
+			const device = await api.get(`/devices/${deviceId}`, {});
 
-			console.log(response.data);
+			console.log(device.data);
 		} catch (error) {
 			console.error(error);
 		}
 
 		try {
-			const response = await api.get(`/patients/${patientId}`, {});
+			const patient = await api.get(`/patients/${patientId}`, {});
 
-			console.log(response.data);
+			console.log(patient.data);
 		} catch (error) {
 			console.error(error);
 		}
+
+		// socket.on("connect", () => {
+		// 	socket.emit("client_first_access")
+		// })
+		// console.log(connectionId)
+	};
+
+	const connection = async () => {
+		const socket = io('http://localhost:3333');
+		console.log('conectado', socket);
+		socket.on('connect', () => {
+			// either with send()
+		});
+
+		socket.emit("hello", "world");
+
+		// handle the event sent with socket.send()
+		socket.on('message', (data) => {
+			console.log(data);
+		});
+
+		socket.on('message-client', (data) => {
+			console.log(data);
+		});
+
+		// handle the event sent with socket.emit()
+		socket.on('greetings', (elem1, elem2, elem3) => {
+			console.log(elem1, elem2, elem3);
+		});
 	};
 
 	async function getDevice(e: FormEvent) {
@@ -43,22 +70,6 @@ function Admin() {
 
 		console.log(response);
 	}
-
-	// const handleSubmit = async () => {
-	// 	try {
-	// 		const socket = io('http://localhost:3333');
-	// 		console.log(socket);
-
-	// 		// const response =  await api.get('/admin',{})
-	// 		// socket.on("message", function(msg){
-	// 		//     console.log("socket esta funcionando no front:", msg)
-	// 		// })
-	// 		// console.log(response);
-	// 	} catch (error) {
-	// 		console.error(error);
-	// 	}
-	// };
-	// onClick={handleSubmit}
 
 	return (
 		<div id="page-admin" className="container">
@@ -166,6 +177,14 @@ function Admin() {
 					>
 						iniciar exame
 					</button>
+					<button
+						id="button-connection"
+						onClick={connection}
+						type="button"
+					>
+						iniciar conexão
+					</button>
+
 					<p></p>
 				</div>
 			</main>

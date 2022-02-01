@@ -1,0 +1,51 @@
+#page-exam {
+	width: 100vw;
+	height: 100vh;
+
+	/* color: var(--color-text-in-primary);
+	background: var(--color-background); */
+}
+
+#main {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	flex-direction: column;
+}
+
+.title-container {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	margin: 5rem auto;
+}
+
+.title-container h2 {
+	font: 500 3rem Roboto;
+	color: var(--color-primary);
+}
+
+button {
+	margin-top: 4rem;
+	background: var(--color-primary);
+	width: 15rem;
+	height: 7rem;
+	border-radius: 0.8rem;
+	border: none;
+	font: 700 2rem Ubuntu;
+	color: var(--color-button-text);
+	font-size: 2rem !important;
+	cursor: pointer;
+
+	transition: backgoud-color 0.4s;
+}
+
+button:hover {
+	background: var(--color-primary-dark);
+}
+
+@media (min-width: 700px) {
+	#page-exam {
+		max-width: 100%;
+	}
+}

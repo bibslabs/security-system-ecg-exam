@@ -2,6 +2,7 @@ import * as React from 'react';
 
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import Admin from './pages/Admin';
+import Exam from './pages/Exam';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 
@@ -12,6 +13,7 @@ function Rotas() {
 				<Route path="/" element={<Landing />}/>
 				<Route path="/login" element={<Login />}/>
 				<Route path="/admin" element={<Admin />}/>
+				<Route path="/exam" element={<Exam />}/>
 				{/* <Route path="/login">
 					<Login />
 				</Route>
