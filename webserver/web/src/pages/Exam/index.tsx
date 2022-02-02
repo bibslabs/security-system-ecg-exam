@@ -10,7 +10,7 @@ import PageHeader from '../../components/PageHeader';
 // let socket_id = '';
 
 const patient = 'Perikitas';
-const device = 'P'
+const device = 'P';
 const username = 'drdonatella@gmail.com';
 
 function Exam() {
@@ -35,12 +35,19 @@ function Exam() {
 				}
 			);
 		});
+		socket.on('message', (data) => {
+			console.log('recebi no message:', data);
+		});
 
-		socket.emit('hello', 'world');
+		socket.emit('client-socket', socket.id);
 
 		// handle the event sent with socket.send()
-		socket.on('message', (data) => {
+		socket.on('client-message', (data) => {
 			console.log(data);
+		});
+
+		socket.onAny((event, ...args) => {
+			console.log(event, args);
 		});
 
 		// handle the event sent with socket.emit()

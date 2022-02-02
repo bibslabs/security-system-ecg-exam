@@ -10,6 +10,7 @@ const app = express();
 
 const http = createServer(app); //criando protocolo http
 // const io = new Server(http); //criando protocolo websocket
+
 const io = require('socket.io')(http, {
 	cors: {
 		origin: 'http://localhost:3000',
@@ -22,19 +23,32 @@ const io = require('socket.io')(http, {
 app.use(cors());
 // TODO: ver como fazer esse put para atualizar o dado da tabela sempre que atualizar o socket id
 
+// const socket_client = [];
 io.on('connection', (socket: Socket) => {
-	// app.put(`/socket/ea9398ce-e2b3-41bd-94e0-3cfc67a2791f/socket_id/${socket.id}`)
+	// socket_client.push({
+	// 	user_id: socket.id,
+	// });
 	console.log('socket criado no http', socket.id);
+	// console.log('socket_client', socket_client);
 	socket.emit('message', 'hello14');
 
 	socket.on('hello', (arg) => {
 		console.log(arg); // world
 	});
 
-	socket.on('message-esp', (arg) => {
-		console.log(arg); // world
-		socket.emit('message-client', arg);
+	socket.on('client-socket', (id) => {
+		console.log('id do socket client', id);
 	});
+
+	var argument = 'oiii teste';
+	socket.on('esp-message', (arg) => {
+		console.log('arg:', arg); // message esp
+		socket.broadcast.emit('client-message', arg);
+		// socket_client.forEach(function (item) {
+		// });
+	});
+
+	
 
 	// socket.disconnect();
 });

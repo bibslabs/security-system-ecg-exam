@@ -2,6 +2,11 @@ import { io } from "../http";
 import { ConnectionsService } from "../services/ConnectionsService";
 import { UsersService } from "../services/UsersService";
 
+// interface IParams {
+//     patient: string;
+//     username: string;
+//     device: string;
+// }
 
 io.on("connect", (socket) =>{
     const connectionsService = new ConnectionsService();
@@ -9,7 +14,7 @@ io.on("connect", (socket) =>{
 
     socket.on("client_first_access", async (params) => {
         const socket_id = socket.id;
-        const {patient, username, device} = params;
+        const {patient, username, device} = params; //as Iparams
 
         console.log(params);
 
