@@ -1,37 +1,45 @@
-import { getCustomRepository, Repository } from "typeorm";
-import { Connection } from "../entities/Connection";
-import { ConnectionsRepository } from "../repositories/ConnectionsRepository"
+import { getCustomRepository, Repository } from 'typeorm';
+import { Connection } from '../entities/Connection';
+import { ConnectionsRepository } from '../repositories/ConnectionsRepository';
 
 interface IConnectionCreate {
-    socket_id: string;
-    device_id?: string;
-    user_id: string;
-    id?: string;
+	socket_id: string;
+	device_id?: string;
+	user_id: string;
+	id?: string;
 }
 
 class ConnectionsService {
-    private connectionsRepository = new Repository<Connection>();
+	private connectionsRepository = new Repository<Connection>();
 
-    constructor() {
-        this.connectionsRepository = getCustomRepository(ConnectionsRepository);
-    }
+	constructor() {
+		this.connectionsRepository = getCustomRepository(ConnectionsRepository);
+	}
 
-    async create({socket_id, device_id, user_id, id}: IConnectionCreate){
-        const connection = this.connectionsRepository.create({
-            socket_id,
-            device_id,
-            user_id,
-            id,
-        });
+	async create({ socket_id, device_id, user_id, id }: IConnectionCreate) {
+		const connection = this.connectionsRepository.create({
+			socket_id,
+			device_id,
+			user_id,
+			id,
+		});
 
-        await this.connectionsRepository.save(connection);
+		await this.connectionsRepository.save(connection);
 
-        return connection;
-    }
+		return connection;
+	}
 
-    async list() {
+	async list() {
 		return this.connectionsRepository.find();
+	}
+
+	async findByUserId(user_id: string) {
+		const connection = await this.connectionsRepository.findOne({
+			user_id,
+		});
+
+		return connection;
 	}
 }
 
-export { ConnectionsService }
+export { ConnectionsService };
