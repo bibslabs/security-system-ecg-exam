@@ -1,6 +1,4 @@
 import React, { useState, FormEvent } from 'react';
-import { io } from 'socket.io-client';
-
 import './styles.css';
 
 // import socket from '../../services/socket';
@@ -37,29 +35,7 @@ function Admin() {
 		// console.log(connectionId)
 	};
 
-	const connection = async () => {
-		const socket = io('http://localhost:3333');
-		console.log('conectado', socket);
-		socket.on('connect', () => {
-			// either with send()
-		});
-
-		socket.emit("hello", "world");
-
-		// handle the event sent with socket.send()
-		socket.on('message', (data) => {
-			console.log(data);
-		});
-
-		socket.on('message-client', (data) => {
-			console.log(data);
-		});
-
-		// handle the event sent with socket.emit()
-		socket.on('greetings', (elem1, elem2, elem3) => {
-			console.log(elem1, elem2, elem3);
-		});
-	};
+	
 
 	async function getDevice(e: FormEvent) {
 		e.preventDefault();
@@ -177,14 +153,7 @@ function Admin() {
 					>
 						iniciar exame
 					</button>
-					<button
-						id="button-connection"
-						onClick={connection}
-						type="button"
-					>
-						iniciar conexão
-					</button>
-
+					
 					<p></p>
 				</div>
 			</main>

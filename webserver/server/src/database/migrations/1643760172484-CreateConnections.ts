@@ -1,15 +1,11 @@
-import {
-	MigrationInterface,
-	QueryRunner,
-	Table,
-	TableForeignKey,
-} from 'typeorm';
+import {MigrationInterface, QueryRunner, Table, TableForeignKey} from "typeorm";
 
-export class CreateConnections1641740575993 implements MigrationInterface {
-	public async up(queryRunner: QueryRunner): Promise<void> {
+export class CreateConnections1643760172484 implements MigrationInterface {
+
+    public async up(queryRunner: QueryRunner): Promise<void> {
 		await queryRunner.createTable(
 			new Table({
-				name: 'connections',
+				name: 'myconnections',
 				columns: [
 					{
 						name: 'id',
@@ -22,6 +18,11 @@ export class CreateConnections1641740575993 implements MigrationInterface {
 					},
 					{
 						name: 'device_id',
+						type: 'uuid',
+                        isNullable: true
+					},
+                    {
+						name: 'user_id',
 						type: 'uuid',
 					},
 					{
@@ -39,13 +40,25 @@ export class CreateConnections1641740575993 implements MigrationInterface {
 		);
 
 		await queryRunner.createForeignKey(
-			'connections',
+			'myconnections',
 			new TableForeignKey({
 				name: 'FKConnectionDevice',
 				referencedTableName: 'devices',
 				referencedColumnNames: ['id'],
 				columnNames: ['device_id'],
-				onDelete: 'SET NULL',
+				onDelete: 'CASCADE',
+				onUpdate: 'SET NULL',
+			})
+		);
+
+        await queryRunner.createForeignKey(
+			'myconnections',
+			new TableForeignKey({
+				name: 'FKConnectionUser',
+				referencedTableName: 'users',
+				referencedColumnNames: ['id'],
+				columnNames: ['user_id'],
+				onDelete: 'CASCADE',
 				onUpdate: 'SET NULL',
 			})
 		);
@@ -53,6 +66,7 @@ export class CreateConnections1641740575993 implements MigrationInterface {
 
 	public async down(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.dropForeignKey('connections', 'FKConnectionDevice');
+        await queryRunner.dropForeignKey('connections', 'FKConnectionUser');
 		await queryRunner.dropTable('connections');
     }
 }

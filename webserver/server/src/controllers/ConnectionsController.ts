@@ -3,7 +3,7 @@ import { ConnectionsService } from '../services/ConnectionsService';
 
 class ConnectionsController {
 	async create(request: Request, response: Response): Promise<Response> {
-		const { socket_id, device_id } = request.body;
+		const { socket_id, device_id, user_id, id } = request.body;
 
 		const connectionsServices = new ConnectionsService();
 
@@ -11,6 +11,8 @@ class ConnectionsController {
 			const connection = await connectionsServices.create({
 				socket_id,
 				device_id,
+				user_id,
+				id
 			});
 	
 			return response.json(connection);

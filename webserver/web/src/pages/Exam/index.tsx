@@ -3,37 +3,54 @@ import { io } from 'socket.io-client';
 
 import './styles.css';
 
-// import createConnection from '../../services/socket';
 import api from '../../services/api';
 
 import PageHeader from '../../components/PageHeader';
-import Select from '../../components/Select';
+
+// let socket_id = '';
+
+const patient = 'Perikitas';
+const device = 'P'
+const username = 'drdonatella@gmail.com';
 
 function Exam() {
-	const [patientId, setPatient] = useState('');
-	const [deviceId, setDevice] = useState('');
-	
-
-	const getElements = async () => {
-		try {
-			const response = await api.get(`/devices/${deviceId}`, {});
-
-			console.log(response.data);
-		} catch (error) {
-			console.error(error);
-		}
-
-		try {
-			const response = await api.get(`/patients/${patientId}`, {});
-
-			console.log(response.data);
-		} catch (error) {
-			console.error(error);
-		}
-
-		// const connectionId = createConnection();
-		// console.log(connectionId);
+	const params = {
+		patient,
+		device,
+		username,
 	};
+	const connection = async () => {
+		const socket = io('http://localhost:3333');
+		console.log('conectado', socket);
+		socket.on('connect', () => {
+			socket.emit(
+				'client_first_access',
+				params,
+				(call: string, err: string) => {
+					if (err) {
+						console.error(err);
+					} else {
+						console.log(call);
+					}
+				}
+			);
+		});
+
+		socket.emit('hello', 'world');
+
+		// handle the event sent with socket.send()
+		socket.on('message', (data) => {
+			console.log(data);
+		});
+
+		// handle the event sent with socket.emit()
+		socket.on('greetings', (elem1, elem2, elem3) => {
+			console.log(elem1, elem2, elem3);
+		});
+	};
+
+	// const connectionId = createConnection();
+	// console.log(connectionId);
 
 	return (
 		<div id="page-exam" className="container">
@@ -44,10 +61,12 @@ function Exam() {
 					<h2>Dados do exame:</h2>
 				</div>
 
+				<div className="exam-container"></div>
+
 				<div className="button-container">
 					<button
 						id="button-connection"
-						onClick={getElements}
+						onClick={connection}
 						type="button"
 					>
 						iniciar exame

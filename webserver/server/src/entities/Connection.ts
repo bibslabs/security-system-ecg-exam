@@ -10,8 +10,9 @@ import {
 
 import { v4 as uuid } from 'uuid';
 import { Device } from './Device';
+import { User } from './User';
 
-@Entity('connections')
+@Entity('myconnections')
 class Connection {
 	@PrimaryColumn()
 	id: string;
@@ -23,8 +24,15 @@ class Connection {
 	@ManyToOne(() => Device)
 	device: Device;
 
-    @Column()
+	@Column()
     device_id: string;
+
+	@JoinColumn({ name: 'user_id' })
+	@ManyToOne(() => User)
+	user: Device;
+
+    @Column()
+    user_id: string;
 
 	@CreateDateColumn()
 	created_at: Date;
