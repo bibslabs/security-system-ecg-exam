@@ -8,12 +8,40 @@ import './database';
 import { routes } from './routes';
 import { ExclusionMetadata } from 'typeorm/metadata/ExclusionMetadata';
 import { ReadStream } from 'typeorm/platform/PlatformTools';
+var microtime = require('microtime')
+const NTP = require('ntp-time').Client;
+const client = new NTP('pool.ntp.br', 123, { timeout: 5000 });
+var time_diff:number = 0
 
+//GMT -3 offset in micros
+// const micro_offset = 10800000000
+
+function get_clock_diffs(ntp_time){
+	time_diff = Date.now() - ntp_time;
+	console.log("Time drift is -> ",time_diff);
+}
+
+function calc_latency(received_timestamp){
+	const latency = (Date.now() - time_diff) - received_timestamp;
+	// console.log("Latency is -> ", latency, " milliseconds")
+	return latency
+}
+
+function calc_latency_hr(received_timestamp){
+	const latency = microtime.now() - Number(received_timestamp)
+	return Number(latency)
+}
+
+client
+	.syncTime()
+	.then(response => get_clock_diffs(Math.floor(response["d"]*1000)))
+	.catch(console.log);
 
 //values to check every second
 var packets:number = 0;
 var bytes:number = 0;
 var ticks:number = 0;
+var latencies:number[] = []
 
 class test_procedure{
 	algo: string;
@@ -25,57 +53,79 @@ class test_result{
 	max : number;
 	speeds: number[];
 	packets: number[];
+	lats: number[];
 }
 
+var algos: string[] = ["NONE","AESCBC","SPECK","CLEFIA"]
+
 var tests: test_procedure[] = [
-{algo:"AESCBC",pkg_s:"50"},{algo:"AESCBC",pkg_s:"200"},{algo:"AESCBC",pkg_s:"500"},{algo:"AESCBC",pkg_s:"1000"},{algo:"AESCBC",pkg_s:"1500"},{algo:"AESCBC",pkg_s:"2000"},
-{algo:"SPECK",pkg_s:"50"},{algo:"SPECK",pkg_s:"200"},{algo:"SPECK",pkg_s:"500"},{algo:"SPECK",pkg_s:"1000"},{algo:"SPECK",pkg_s:"1500"},{algo:"SPECK",pkg_s:"2000"},
-{algo:"CLEFIA",pkg_s:"50"},{algo:"CLEFIA",pkg_s:"200"},{algo:"CLEFIA",pkg_s:"500"},{algo:"CLEFIA",pkg_s:"1000"},{algo:"CLEFIA",pkg_s:"1500"},{algo:"CLEFIA",pkg_s:"2000"},
+{algo:"NONE",pkg_s:"100"},{algo:"AESCBC",pkg_s:"170"},{algo:"AESCBC",pkg_s:"190"},{algo:"AESCBC",pkg_s:"210"},{algo:"AESCBC",pkg_s:"230"},{algo:"AESCBC",pkg_s:"250"},
+{algo:"SPECK",pkg_s:"270"},{algo:"SPECK",pkg_s:"290"},{algo:"SPECK",pkg_s:"300"},{algo:"SPECK",pkg_s:"140"},{algo:"SPECK",pkg_s:"150"},{algo:"SPECK",pkg_s:"160"},
+{algo:"CLEFIA",pkg_s:"170"},{algo:"CLEFIA",pkg_s:"190"},{algo:"CLEFIA",pkg_s:"200"},{algo:"CLEFIA",pkg_s:"210"},{algo:"CLEFIA",pkg_s:"220"},{algo:"CLEFIA",pkg_s:"230"},
 ]
 
 var current_procedre:number = 0;
 var interval;
+var cur_algo:number = 0
 var esp_list: esp_unit[] = []
 var results: test_result[] = []
-const max_ticks:number = 20;
+const min_samples = 100;
+const max_samples = 1000;
+const sample_increase = 10
+
+const max_ticks:number = 60;
+
+var current_sample_size = min_samples;
+
 
 function set_esp_config(value:test_procedure){
 	esp_list.forEach(function(data){
 		if(data.state == ESP_STATE.ESP_SEND){
-			data.socket.emit("test-cfg",JSON.stringify(value));
+			data.socket.emit("test-cfg",value);
 		}
-	})
+	});
 }
 
-var current_test:test_result = {min:0,max:0,speeds:[],packets:[]};
+const average = arr => arr.reduce((a,b) => a + b, 0) / arr.length;
+
+var current_test:test_result = {min:0,max:0,speeds:[],packets:[],lats:[]};
 
 function throughput_test() {
 	if(ticks < max_ticks){
-		console.log("Throughput test -> " + bytes + " bytes por segundo em " + packets + " pacotes");
+		console.log("Throughput test -> " + bytes + " bytes por segundo em " + packets + " pacotes" + "com latencia media" + average(latencies));
+		console.log()
 		current_test.speeds.push(bytes);
 		current_test.packets.push(packets);
 		packets = 0;
 		bytes = 0;
+		latencies = []
 		ticks+=1;
 	}else{
-		console.log("Gravando teste...");
+		console.log("Gravando teste |  algoritmo " + algos[cur_algo] + " amostras " + current_sample_size);
 		current_test.max = Math.max(...current_test.speeds)//operador spread ... faz algum milagre
 		current_test.min = Math.min(...current_test.speeds)
+		current_test.lats = latencies
 		results.push(current_test);
 		write_result(current_test);
 		// current_test.speeds = [];
 		// current_test.packets = [];
-		current_procedre++;
-		set_esp_config(tests[current_procedre]);
+		current_sample_size += sample_increase
+		if(current_sample_size > max_samples){
+			cur_algo++;
+			current_sample_size = min_samples;
+		}
+		const change_test:test_procedure = {algo:algos[cur_algo],pkg_s:current_sample_size.toString()}
+		set_esp_config(change_test);
 		ticks = 0;
+		current_test = {min:0,max:0,speeds:[],packets:[],lats:[]};
 	}
 }
 
 
 function write_result(json_object){
 	const path = require('path');
-	const algo = tests[current_procedre].algo;
-	const pkg_s = tests[current_procedre].pkg_s;
+	const algo = algos[cur_algo];
+	const pkg_s = current_sample_size.toString();
 	const absPath = path.join(__dirname,"testresults",algo + "-"+ pkg_s + ".txt");
 	open(absPath, 'w', (err, fd) => {
 		if (err) {
@@ -88,7 +138,7 @@ function write_result(json_object){
 		}
 	  
 		try {
-		  write(fd,JSON.stringify(json_object),function(err,written){
+		  write(fd,JSON.stringify(json_object,null,2),function(err,written){
 
 		  });
 		} finally {
@@ -213,7 +263,6 @@ io.on('connection', (socket: Socket) => {
 	socket.on('client-socket', (id) => {
 		console.log('id do socket client', id);
 	});
-
 	//mensagem inicial
 	socket.on('esp-message', (arg) => {
 		console.log('arg:', arg); // message esp
@@ -243,6 +292,7 @@ io.on('connection', (socket: Socket) => {
     //esta mensagem sera descriptografada para 
 	//validar que ambos estao comunicando com a mesma chave e algoritmo
 	socket.on('crypto-set', (arg) => {
+		console.log(arg);
 		//procura o esp na lista ja registrado
 		const ip = socket.handshake.address; // ip do esp
 		const achei = esp_list.findIndex(data => data.ip  === ip);
@@ -256,7 +306,9 @@ io.on('connection', (socket: Socket) => {
 				socket.emit("throughput-start","");
 				interval = setInterval(throughput_test, 1000);
 				esp_list[achei].state = ESP_STATE.ESP_SEND;
-				socket.emit("test-cfg",JSON.stringify(tests[current_procedre]));
+				socket.emit("test-cfg",tests[current_procedre]);
+				current_sample_size = 100
+				cur_algo = 3
 			}
 		}else{
 			console.log("Reset evenviado!")
@@ -268,15 +320,23 @@ io.on('connection', (socket: Socket) => {
 		// });
 	});
 
-	socket.on('throughput', (arg) => {
+	socket.on('throughput', (arg,arg2) => {
+		//ntp time
+		// client.
+		const lat = calc_latency_hr(parseInt(arg2))
 		const ip = socket.handshake.address; // ip do esp
+		// console.log(lat)
 		const achei = esp_list.findIndex(data => data.ip  === ip);
 		// console.log(esp_list[achei]);
 		if(esp_list[achei].state == ESP_STATE.ESP_SEND){
-			// console.log(arg);
 			packets+=1;
-			bytes+=arg.length;
-			// console.log(arg);
+
+			latencies.push(lat)
+			// console.log(diff)s
+			bytes+=JSON.stringify(arg).length;
+			if(JSON.stringify(arg).length < 20){
+				console.log(arg)
+			}
 		}else{
 			console.log("Reset evenviado!")
 			socket.emit("reset","");
