@@ -2,18 +2,22 @@
 #undef CORE_DEBUG_LEVEL
 #endif
 
-#define CORE_DEBUG_LEVEL 3
-#define LOG_LOCAL_LEVEL ESP_LOG_DEBUG
+#if !defined(ESP32)
+  #error This code is intended to run only on the ESP32 boards ! Please check your Tools->Board setting.
+#endif
 
-#include <Arduino.h>
+#define _WEBSOCKETS_LOGLEVEL_     2
+
 #include <WiFi.h>
-#include <ArduinoJson.h>
+#include <WiFiMulti.h>
+#include <WiFiClientSecure.h>
 
-#define WEBSOCKETS_NETWORK_TYPE NETWORK_ESP8266_ASYNC 
+#include <ArduinoJson.h>
 
 #include <WebSocketsClient_Generic.h>
 #include <SocketIOclient_Generic.h>
-
+#include "libb64/cencode.h"
+#include "ESPNtpClient.h"
 
 #include "crypto_test.h"
 #include "freertos/FreeRTOS.h"
@@ -27,13 +31,6 @@
 
 // Event
 // Server send
-#define SSAC "server-send-ack-connected"
-#define SSM "server-send-message"
-
-// Client send
-#define CC "client-connect"
-#define CSM "client-send-message"
-
 #define UDP_PORT 3333
 
 //esp list
@@ -61,10 +58,10 @@ typedef enum state {START, CRYPTO_SET, SEND}state_t;
 static state_t esp_state = START;
 
 // Config server side
-// const char host[] = "192.168.15.6";
+// const char host[] = "192.168.15.3";
 const char host[] = "192.168.169.106";
 
-uint16_t port = 3333; // If you connect to a VPS hosting run HTTP, you must set port = 80.
+const uint16_t port = 3333; // If you connect to a VPS hosting run HTTP, you must set port = 80.
 const char path[] = "/socket.io/?EIO=4"; // If you connect with namespace, set path = "/your-nsp". Default path = "/".
 
 const uint8_t message[] = "Ola boa noite!";
@@ -72,13 +69,18 @@ const uint8_t message[] = "Ola boa noite!";
 static uint8_t cryptographic_message[256];
 static uint8_t encrypted[8192];
 
+#define _getCycleCount() micros()
+
+//adquirir ciclos de clock do Program counter
 
 SocketIOclient socket;
-
+#define BIG_BUFS_SIZE 10000
 // static void socket_io_task(void * arg);
-static void socketEvent(socketIOmessageType_t type, uint8_t*payload, size_t length);
 static void process_state(void);
-static DynamicJsonDocument response_json(4096);
+
+static DynamicJsonDocument response_json(2048);
+
+static char throughput_str[BIG_BUFS_SIZE],encoded_encrypt[BIG_BUFS_SIZE];
 
 DynamicJsonDocument doc(2048);
 
@@ -107,24 +109,24 @@ static void set_package_size(uint32_t val){
    package_size = val;
 }
 // Use for customizing event handle function. If you don't want to customize,
-// you can ignore it. 
-void socketIOEvent(socketIOmessageType_t type, uint8_t * payload, size_t length)
+// you can ignore it. f
+void socketIOEvent(const socketIOmessageType_t& type, uint8_t * payload, const size_t& length)
 {
     switch (type)
     {
     case sIOtype_DISCONNECT:
-        Serial.printf("[SIoC] Disconnected!\n");
-        esp_state = START;
-        break;
-    case sIOtype_CONNECT:{
-         Serial.print("[IOc] Connected to url: ");
-         Serial.println((char*) payload);
+      Serial.println("[IOc] Disconnected");
+      
+      break;
+      
+    case sIOtype_CONNECT:
+      Serial.print("[IOc] Connected to url: ");
+      Serial.println((char*) payload);
 
-         // join default namespace (no auto join in Socket.IO V3)
-         socket.send(sIOtype_CONNECT,"/");
-
-        break;
-    }
+      // join default namespace (no auto join in Socket.IO V3)
+      socket.send(sIOtype_CONNECT, "/");
+      
+      break;
     case sIOtype_EVENT:
       Serial.printf("[SIoC] get event: %s\n", payload);
       deserializeJson(response_json,(unsigned char*)payload);
@@ -158,21 +160,49 @@ void socketIOEvent(socketIOmessageType_t type, uint8_t * payload, size_t length)
       //   Serial.println(payload);
         break;
     case sIOtype_ACK:
-        Serial.printf("[SIoC] get ack: %u\n", length);
-      //   hexdump(payload, length);
-        break;
+      Serial.print("[IOc] Get ack: ");
+      Serial.println(length);
+      
+      //hexdump(payload, length);
+      
+      break;
+      
     case sIOtype_ERROR:
-        Serial.printf("[SIoCc] get error: %u\n", length);
-      //   hexdump(payload, length);
-        break;
+      Serial.print("[IOc] Get error: ");
+      Serial.println(length);
+      
+      //hexdump(payload, length);
+      
+      break;
+      
     case sIOtype_BINARY_EVENT:
-        Serial.printf("[SIoC] get binary: %u\n", length);
-      //   hexdump(payload, length);
-        break;
+      Serial.print("[IOc] Get binary: ");
+      Serial.println(length);
+      
+      //hexdump(payload, length);
+      
+      break;
+      
     case sIOtype_BINARY_ACK:
-        Serial.printf("[SIoC] get binary ack: %u\n", length);
-      //   hexdump(payload, length);
-        break; 
+       Serial.print("[IOc] Get binary ack: ");
+      Serial.println(length);
+      
+      //hexdump(payload, length);
+      
+      break;
+      
+    case sIOtype_PING:
+      Serial.println("[IOc] Get PING");
+
+      break;
+
+   case sIOtype_PONG:
+      Serial.println("[IOc] Get PONG");
+
+      break;   
+      
+    default:
+      break;
 
     }
 }
@@ -190,11 +220,9 @@ void setup() {
    Serial.print("Connecting to ");
    Serial.print(ssid);
 
-   // if (WiFi.config(staticIP, gateway, subnet, dns, dns) == false) {
-   //    Serial.println("Configuration failed.");
-   // }
    WiFi.mode(WIFI_STA);
    WiFi.begin(ssid, pwd);
+
 
    //  Wait esp8266 connected to wifi
    while (WiFi.status() != WL_CONNECTED) {
@@ -208,28 +236,13 @@ void setup() {
    Serial.println("IP address(ESP):");
    Serial.println(WiFi.localIP());
 
-   // Connect to server with namespace
-
-   // or socket.begin(host, port); if you want to connect to root path. Default
-   // nsp(path) = "/". If you want to connect to server witn ssl, you can follow
-   // code below: socket.beginSSL(ssl_host, path); // Default port = 443.
-
-   // If you want to override event handle function, you can use below code:
-   // function was called.
-   socket.begin(host, port,"/socket.io/?EIO=3");
+   NTP.setTimeZone(TZ_Etc_GMTm3);
+   NTP.setInterval(1,200);
+   NTP.begin("pool.ntp.br",false);
+   socket.setReconnectInterval(10000);
+   socket.begin(host, port);
    socket.onEvent(socketIOEvent); // this function must be called after begin
-   // //  Setup 'on' event listeners
-   // socket.onEvent(SSAC, serverSendAckConnected);
-   // socket.onEvent(SSM, serverSendMessage);
-   // udpSocket.begin(UDP_PORT);
-   // Remove event handle functions
-   // socket.remove(SSM);
-   // test_all_cryptos();
-
-   //tasks do  freeRTOS dao conflito com runtime do arduino
-   //devido a implementações nao serem thread safe
-   // xTaskCreate(socket_io_task,"sio",1024*16,NULL,2,NULL);
-
+   
 }
 
 // Send message
@@ -251,9 +264,12 @@ void loop() {
    if((now - previousTime) > duration){
       previousTime = now;
       if(socket.isConnected()){
+         // Serial.printf("My time -> %lld \n",NTP.micros());
          process_state();
       }else{
          Serial.println("Debug: estou offline");
+         socket.send(sIOtype_CONNECT,path);
+         esp_state = START;
       }
    }
 }
@@ -290,24 +306,37 @@ static void process_state(void){
       }
       case SEND: {
 
-         DynamicJsonDocument throughput(8192);
-
+         //armazenar o tempo necessario em ciclos de clock para cada operacao
+         DynamicJsonDocument throughput(BIG_BUFS_SIZE);
+         //primeiro argumento da lista é o evento do socket.io
+         throughput.clear();
          throughput[0] = "throughput";
-         for(uint16_t i = 1; i < package_size ; i++){
-            throughput[1]["data"][i-1] = i*23;
+         //segundo argumento é o conteudo em si
+         for(uint16_t i = 0; i < package_size ; i++){
+            throughput[1]["data"][i] = 1000+i;
          }
-         String throughput_str;
-         serializeJson(throughput[1],throughput_str);
-
-         base64 base;
-         uint32_t len = throughput_str.length() - (throughput_str.length() % 16);
+         //tempo para criar json
+         //transformar objeto em string
+         serializeJson(throughput[1],throughput_str,sizeof(throughput_str));
+         uint32_t len = strlen(throughput_str)- (strlen(throughput_str) % 16);
+         //encriptar os dados
          memset(encrypted,0,sizeof(encrypted));
-         encrypt_data((uint8_t*)throughput_str.c_str(),encrypted,throughput_str.length());
-         String encoded_encrypt = base.encode(encrypted,throughput_str.length());
+         encrypt_data((uint8_t*)throughput_str,encrypted,len);
+         //encodar os dados encriptados em base64
+         base64_encode_chars((char*)encrypted,strlen(throughput_str),encoded_encrypt);
+         throughput.clear();
+         char micro_str[30];
+         sprintf(micro_str,"%lld",NTP.micros());
+         throughput[0] = "throughput";
          throughput[1] = encoded_encrypt;
-         throughput_str.clear();
-         serializeJson(throughput,throughput_str);
-         socket.sendEVENT(throughput_str);
+         throughput[2] = micro_str;
+         serializeJson(throughput,throughput_str,sizeof(throughput_str));
+         socket.sendEVENT(throughput_str,strlen(throughput_str));
+         //tempo em microsegundos de cada operacao
+         // if((esp_random() %100) == 0){
+         //    Serial.printf("microseconds (%u samples, %u bytes) : create_json:%lu, serialize:%lu, encrypt:%lu, encode:%lu, send:%lu\n",package_size,strlen(throughput_str),create_json,serialize,encrypt,encode,send);
+         // }
+         
          break;
       }
       default:

@@ -65,13 +65,14 @@ static inline int32_t _getCycleCount(void) {
   return ccount;
 }
 
-static uint32_t cycle_start,cycle_end;
+static uint32_t cycle_start,cycle_end,setup_time;
 static uint8_t mbai = 0; //my bench array index
 static void test_aes_cbc(void){
     Serial.printf("AES CBC\n\r");
     Serial.printf("Phrase -> %s \n\r",sequencia);
     cycle_start = _getCycleCount();
     cbc_start(key_256,key_128); //usando a chave de 128 como init vector
+    setup_time = _getCycleCount() - cycle_start;
     aes_cbc_compress_chunk((uint8_t*)sequencia,(uint8_t*)resultado,STR_SIZE);
     cycle_end = _getCycleCount() - cycle_start;
     benchs[mbai].MBs = (STR_SIZE*1.0)/(cycle_end/240.0);

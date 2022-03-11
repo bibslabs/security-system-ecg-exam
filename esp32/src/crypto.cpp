@@ -23,6 +23,8 @@ static void aes_cbc_enc_wrap(uint8_t * input, uint8_t *output, size_t size);
 static void aes_cbc_dec_wrap(uint8_t * input, uint8_t *output, size_t size);
 static void speck_enc_wrap(uint8_t * input, uint8_t *output, size_t size);
 static void speck_dec_wrap(uint8_t * input, uint8_t *output, size_t size);
+static void no_encrypt(uint8_t * input, uint8_t *output, size_t size);
+static void no_decrypt(uint8_t * input, uint8_t *output, size_t size);
 
 void encrypt_data(uint8_t * input, uint8_t * output, size_t size){
     enc_f(input,output,size);
@@ -49,7 +51,11 @@ void set_crypto_only(String crypto_str){
         dec_f = speck_dec_wrap;
         Serial.printf("Configured Speck cryptographic algorithm\n");
 
-    }   
+    }else if(crypto_str == "NONE"){
+        enc_f = no_encrypt;
+        dec_f = no_decrypt;
+        Serial.printf("Configure NO encryption");
+    }
 }
 
 void set_crypto(String crypto_str, String key_str){
@@ -75,6 +81,10 @@ void set_crypto(String crypto_str, String key_str){
         dec_f = speck_dec_wrap;
         Serial.printf("Configured Speck cryptographic algorithm\n");
 
+    }else if(crypto_str == "NONE"){
+        enc_f = no_encrypt;
+        dec_f = no_decrypt;
+        Serial.printf("Configure NO encryption");
     }   
 }
 
@@ -117,4 +127,15 @@ static void speck_dec_wrap(uint8_t * input, uint8_t *output, size_t size){
     for(uint32_t i = 0 ; i < size; i+=16){
         Speck_Decrypt(cipher_object,(uint8_t*)&input[i],(uint8_t*)&output[i]);
     }
+}
+
+static void no_encrypt(uint8_t * input, uint8_t *output, size_t size){
+    (void)input;
+    (void)output;
+    (void)size;
+}
+static void no_decrypt(uint8_t * input, uint8_t *output, size_t size){
+    (void)input;
+    (void)output;
+    (void)size;
 }
