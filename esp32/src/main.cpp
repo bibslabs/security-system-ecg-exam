@@ -11,6 +11,7 @@
 #include <WiFi.h>
 #include <WiFiMulti.h>
 #include <WiFiClientSecure.h>
+#include "WiFiUdp.h"
 
 #include <ArduinoJson.h>
 
@@ -23,6 +24,8 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "crypto.h"
+#include "Crypto.h"
+#include "Curve25519.h"
 #include "clefia.h"
 #include "base64.h"
 
@@ -53,9 +56,13 @@ const char *pwd = "LinhaLIVRE314089";
 
 static uint32_t package_size = 500;
 
-typedef enum state {START, CRYPTO_SET, SEND}state_t;
+static uint8_t dh_pub[32];
+static uint8_t dh_priv[32];
+static uint8_t dh_ext_pub[32];
+static uint8_t shared_key[32];
+typedef enum state {AUTH,DERIVE_KEY,OPEN_SOCKET,START, CRYPTO_SET, SEND}state_t;
 
-static state_t esp_state = START;
+static state_t esp_state = AUTH;
 
 // Config server side
 // const char host[] = "192.168.15.3";
@@ -63,11 +70,13 @@ const char host[] = "192.168.169.106";
 
 const uint16_t port = 3333; // If you connect to a VPS hosting run HTTP, you must set port = 80.
 const char path[] = "/socket.io/?EIO=4"; // If you connect with namespace, set path = "/your-nsp". Default path = "/".
-
+const uint16_t udp_port = 41234;
 const uint8_t message[] = "Ola boa noite!";
 
 static uint8_t cryptographic_message[256];
 static uint8_t encrypted[8192];
+
+WiFiUDP udp;
 
 #define _getCycleCount() micros()
 
@@ -83,6 +92,25 @@ static DynamicJsonDocument response_json(2048);
 static char throughput_str[BIG_BUFS_SIZE],encoded_encrypt[BIG_BUFS_SIZE];
 
 DynamicJsonDocument doc(2048);
+
+static void generate_keys(){
+   Curve25519::dh1(dh_pub,dh_priv);
+   Serial.printf("Public key ->");
+   for(uint8_t i = 0 ; i < 32 ; i++){
+      Serial.printf("%02X ",dh_pub[i]);
+   }
+   Serial.printf("\n\r");
+}
+
+static void derive_key(uint8_t * external_pubkey){
+   Curve25519::dh2(external_pubkey,dh_priv);
+   Serial.printf("derived final key -> ");
+   memcpy(shared_key,external_pubkey,32 );
+   for(uint8_t i = 0 ; i < 32 ; i++){
+      Serial.printf("%02X ",shared_key[i]);
+   }
+   Serial.printf("\n");
+}
 
 void serverSendAckConnected(const char *payload, size_t length) {
    Serial.print("Server says: ");
@@ -154,6 +182,8 @@ void socketIOEvent(const socketIOmessageType_t& type, uint8_t * payload, const s
          Serial.printf("Configurando algoritmo %s com pacote de %s leituras\n",algo.c_str(),pkg.c_str());
          set_package_size(atoi(pkg.c_str()));
          set_crypto_only(algo);
+      }else if(response_json[0] == "pub-key"){
+         //external public key is received via datagram/http
       }
 
         
@@ -229,6 +259,8 @@ void setup() {
       delay(500);
       Serial.print('.');
    }
+   generate_keys();
+
 
    Serial.println();
    Serial.print("Connected WiFi: ");
@@ -240,8 +272,9 @@ void setup() {
    NTP.setInterval(1,200);
    NTP.begin("pool.ntp.br",false);
    socket.setReconnectInterval(10000);
-   socket.begin(host, port);
-   socket.onEvent(socketIOEvent); // this function must be called after begin
+   // socket.begin(host, port);
+   // socket.onEvent(socketIOEvent); // this function must be called after begin
+   udp.begin(41234);
    
 }
 
@@ -263,19 +296,77 @@ void loop() {
    }
    if((now - previousTime) > duration){
       previousTime = now;
-      if(socket.isConnected()){
-         // Serial.printf("My time -> %lld \n",NTP.micros());
-         process_state();
-      }else{
-         Serial.println("Debug: estou offline");
-         socket.send(sIOtype_CONNECT,path);
-         esp_state = START;
+      if(esp_state >= START){//websocket based state
+         if(socket.isConnected()){
+            // Serial.printf("My time -> %lld \n",NTP.micros());
+            process_state();
+         }else{
+            Serial.println("Debug: estou offline");
+            socket.send(sIOtype_CONNECT,path);
+            esp_state = START;
+         }
+      }else{//pre socket http/udp states
+      if (udp.parsePacket() > 0)//Se houver pacotes para serem lidos
+      {
+         String recebido;
+         //Após todos os dados serem lidos, a String estara pronta.
+         while (udp.available() > 0)//Enquanto houver dados para serem lidos
+         {
+            char c = udp.read();
+            recebido += c;
+         }
+         Serial.printf("Mensagem -> %s",recebido.c_str());
+         DynamicJsonDocument rec_json(1024);
+         deserializeJson(rec_json,recebido);
+         if(rec_json["pubkey"] != NULL){
+            Serial.printf("Adquirindo chave publica\n");
+         }
+         const char * pubkey = rec_json["pubkey"];
+         Serial.printf("Chave publica recebida -> %s\n",pubkey);
+         for(uint8_t i = 0 ; i < 32 ; i++){
+            char val[3] = {pubkey[i*2],pubkey[i*2+1],0};
+            dh_ext_pub[i] = strtol(val,NULL,16);
+            Serial.printf("%02X ",dh_ext_pub[i]);
+         }
+         Serial.printf("\n");  
+         
+         Serial.printf("\nEnviando minha chave pública\n");
+         udp.beginPacket(host,udp_port);
+         rec_json.clear();
+         recebido.clear();
+         char hex_buff[65];
+         hex_buff[64] = '\0';
+         for(uint8_t i = 0 ; i < 32 ; i++){
+            sprintf(&hex_buff[i*2],"%02X",dh_pub[i]);
+         }
+         rec_json["pubkey"] = hex_buff;
+         serializeJson(rec_json,recebido);
+         udp.printf("%s",recebido.c_str());
+         udp.endPacket();
+         derive_key(dh_ext_pub);
+         esp_state = DERIVE_KEY;
+
       }
+         process_state();
+      }
+
    }
 }
 
 static void process_state(void){
    switch(esp_state){
+      case AUTH:
+         Serial.printf("Authenticating with server\n");
+         udp.beginPacket(host,udp_port);
+         udp.printf("{\"connection\":\"begin\"}");
+         udp.endPacket();
+      break;
+      case DERIVE_KEY:
+      break;
+      case OPEN_SOCKET:
+         socket.begin(host, port);
+         socket.onEvent(socketIOEvent);
+      break;
       case START: {
          static int i = 1;
          String output;
