@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "cors": "^2.8.5",
+    "curve25519-n": "^1.5.0",
     "express": "^4.17.2",
     "microtime": "^3.0.0",
     "mysql": "^2.18.1",

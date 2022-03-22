@@ -8,10 +8,16 @@ import './database';
 import { routes } from './routes';
 import { ExclusionMetadata } from 'typeorm/metadata/ExclusionMetadata';
 import { ReadStream } from 'typeorm/platform/PlatformTools';
+
+import dgram from 'dgram';
+
+
 var microtime = require('microtime')
 const NTP = require('ntp-time').Client;
 const client = new NTP('pool.ntp.br', 123, { timeout: 5000 });
 var time_diff:number = 0
+
+const curve = require('curve25519-n');
 
 //GMT -3 offset in micros
 // const micro_offset = 10800000000
@@ -58,11 +64,6 @@ class test_result{
 
 var algos: string[] = ["NONE","AESCBC","SPECK","CLEFIA"]
 
-var tests: test_procedure[] = [
-{algo:"NONE",pkg_s:"100"},{algo:"AESCBC",pkg_s:"170"},{algo:"AESCBC",pkg_s:"190"},{algo:"AESCBC",pkg_s:"210"},{algo:"AESCBC",pkg_s:"230"},{algo:"AESCBC",pkg_s:"250"},
-{algo:"SPECK",pkg_s:"270"},{algo:"SPECK",pkg_s:"290"},{algo:"SPECK",pkg_s:"300"},{algo:"SPECK",pkg_s:"140"},{algo:"SPECK",pkg_s:"150"},{algo:"SPECK",pkg_s:"160"},
-{algo:"CLEFIA",pkg_s:"170"},{algo:"CLEFIA",pkg_s:"190"},{algo:"CLEFIA",pkg_s:"200"},{algo:"CLEFIA",pkg_s:"210"},{algo:"CLEFIA",pkg_s:"220"},{algo:"CLEFIA",pkg_s:"230"},
-]
 
 var current_procedre:number = 0;
 var interval;
@@ -77,7 +78,23 @@ const max_ticks:number = 60;
 
 var current_sample_size = min_samples;
 
+const average = arr => arr.reduce((a,b) => a + b, 0) / arr.length;
 
+var current_test:test_result = {min:0,max:0,speeds:[],packets:[],lats:[]};
+
+const private_key = Buffer.alloc(32)
+
+curve.makeSecretKey(private_key)
+
+const pub_key = curve.derivePublicKey(private_key)
+
+
+/** 
+ * @brief configura o ESP para um dado teste
+ * a estrutura do teste é {algo:"nome_algoritmo",pkg_s:"tamanho_pacote"}
+ * 
+ * @param value 
+ */
 function set_esp_config(value:test_procedure){
 	esp_list.forEach(function(data){
 		if(data.state == ESP_STATE.ESP_SEND){
@@ -86,10 +103,15 @@ function set_esp_config(value:test_procedure){
 	});
 }
 
-const average = arr => arr.reduce((a,b) => a + b, 0) / arr.length;
 
-var current_test:test_result = {min:0,max:0,speeds:[],packets:[],lats:[]};
-
+/** 
+ * @brief função periodica chamada a cada segundo pela diretiva setInterval
+ * 
+ * Esta função acumula as mensagens recebidas a cada segundo, e armazena em vetores para serem
+ * escritos posteriormente, assim que ultrapassado um valor maximo de ticks (max_ticks)
+ * irá escrever no disco e passar 
+ * 
+ */
 function throughput_test() {
 	if(ticks < max_ticks){
 		console.log("Throughput test -> " + bytes + " bytes por segundo em " + packets + " pacotes" + "com latencia media" + average(latencies));
@@ -121,7 +143,11 @@ function throughput_test() {
 	}
 }
 
-
+/**
+ * @brief escreve os resultados no disco, o nome do arquivo estará relacionado a configuração do teste
+ * 
+ * @param json_object objeto json a ser escrito
+ */
 function write_result(json_object){
 	const path = require('path');
 	const algo = algos[cur_algo];
@@ -149,6 +175,9 @@ function write_result(json_object){
 	  });
 }
 
+/**
+ * Unidade de ESP
+ */
 class esp_unit {
 	state : ESP_STATE;
 	key : string;
@@ -161,13 +190,23 @@ class esp_unit {
 
 
 
-//estados do esp
+/**
+ * Estados em que o ESP se encontra
+ */
 enum ESP_STATE {
 	ESP_BEGIN = 0, //recem conectou
 	ESP_AUTH = 1, //recebeu a chave
 	ESP_SEND = 2, //respondeu que esta pronto para comecar
 }
 
+/**
+ * Função de faz uma requisição ao executável de criptografia
+ * 
+ * @param algo algoritmo a ser usado
+ * @param key chave criptográfica a ser usada
+ * @param data_b64 dados em base64
+ * @returns resultado já decodificado em string JSON
+ */
 function request_decrypt(algo : string, key : string, data_b64 : string) {
 	const path = require("path");
   
@@ -187,7 +226,13 @@ function request_decrypt(algo : string, key : string, data_b64 : string) {
 	const ret = JSON.parse(res);
 	return ret["result"];
   }
-  
+
+/**
+ *  Cria um novo ESP32
+ * @param ip ip em que este se encontra
+ * @param sock id do socket que esta conectado
+ * @returns object esp_unit preenchido
+ */
 function create_new_esp(ip : string, sock : Socket) : any {
 	const new_esp: esp_unit = {
 		ip: ip,
@@ -200,6 +245,12 @@ function create_new_esp(ip : string, sock : Socket) : any {
 	return new_esp;
 }
 
+/**
+ * @brief adiciona uma chave aleatória para um ESP
+ * 
+ * @param device dispositivo que ira receber a nova chave
+ * @returns 
+ */
 function create_esp_key(device : esp_unit): any {
 	// esp_list[achei].state = ESP_STATE.ESP_AUTH;
 	var crypto = require("crypto");
@@ -223,6 +274,9 @@ const app = express();
 const http = createServer(app); //criando protocolo http
 // const io = new Server(http); //criando protocolo websocket
 
+const udp_server = dgram.createSocket('udp4');
+
+
 const io = require('socket.io')(http, {
 	cors: {
 		origin: 'http://192.168.169.106:3000',
@@ -231,6 +285,56 @@ const io = require('socket.io')(http, {
 		credentials: true,
 	},
 });
+
+
+/**
+ * Tratativas do servidor UDP
+ */
+udp_server.on('error', (err) => {
+	console.log(`server error:\n${err.stack}`);
+	udp_server.close();
+  });
+  
+
+/**
+ * Servidor UDP recebe mensagens e já guarda os valores de IP
+ * em seguida quando um novo esp autenticar-se via socket, ele usará a mesma informação
+ * caso nao bata este sera removido.
+ */
+udp_server.on('message', (msg, rinfo) => {
+	console.log(`Pacote UDP receibdo: ${msg} Do ip -> ${rinfo.address}:${rinfo.port}`);
+	const request = JSON.parse(Buffer.from(msg).toString())
+	const ip = Buffer.from(rinfo.address).toString()
+	const achei = esp_list.findIndex(data => data.ip  === ip);
+	//-1 se nao encontrado, >= 0 retorna o indice
+	if(achei >= 0){
+		console.log("Ja registrado!");
+	}else{
+		console.log("Novo esp!")
+		esp_list.push(create_new_esp(rinfo.address,Socket.prototype))
+	}
+	if(request["connection"] == "begin"){
+		console.log("Iniciando Autenticação")
+		const response = {pubkey : pub_key.toString("hex")}
+		udp_server.send(JSON.stringify(response),rinfo.port,rinfo.address)
+		console.log(response)
+	}
+	if("pubkey" in request){
+		console.log("Chave publica recebida")
+		const recv_pub = Buffer.from(request["pubkey"],"hex")
+		const shared_sec = curve.deriveSharedSecret(private_key, recv_pub)
+		console.log("Chave secreta compartilhada")
+		console.log(shared_sec)
+		
+	}
+  });
+  
+udp_server.on('listening', () => {
+	const address = udp_server.address();
+	console.log(`Escutando pacotes UDP ${address.address}:${address.port}`);
+});
+  
+udp_server.bind(41234);
 
 app.use(cors());
 // TODO: ver como fazer esse put para atualizar o dado da tabela sempre que atualizar o socket id
@@ -302,11 +406,10 @@ io.on('connection', (socket: Socket) => {
 			var res = request_decrypt(esp_list[achei].algo,esp_list[achei].key,arg);
 			const res_str  = Buffer.from(res,"base64").toString("ascii");
 			if(res_str == "Ready to start!"){
-				console.log("lets go!");
 				socket.emit("throughput-start","");
 				interval = setInterval(throughput_test, 1000);
 				esp_list[achei].state = ESP_STATE.ESP_SEND;
-				socket.emit("test-cfg",tests[current_procedre]);
+				set_esp_config({algo:"NONE",pkg_s:"100"})
 				current_sample_size = 100
 				cur_algo = 3
 			}
