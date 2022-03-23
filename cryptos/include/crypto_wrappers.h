@@ -12,7 +12,6 @@ static void clefia_enc_wrap(const uint8_t * input, uint8_t * output, size_t size
 
 static void clefia_dec_wrap(const uint8_t *input, uint8_t * output , size_t size){
     r = ClefiaKeySet(rk, key, 256);
-    cout << "cacimbinha " << endl;
     for(unsigned int i = 0; i < size ; i+=16){
         ClefiaDecrypt(&output[i],&input[i],rk,r);
     }

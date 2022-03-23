@@ -113,6 +113,7 @@ int main(int argc,char *argv[]){
    process_request(cfg);
    memcpy(key,HexToBytes(cfg.key).data(),32);
    result.resize(cfg.byte_vec.size());
+
    cfg.func(&cfg.bytes[0],&giant_array[0],cfg.byte_vec.size());
 
    // cfg.func(&cfg.bytes[0],&giant_array[0],16);
