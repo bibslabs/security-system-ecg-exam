@@ -14,7 +14,7 @@ em base64 ficara encodado como
 VGhlIHF1aWNrIGJyb3duIGZveCBqdW1wcyBvdmVyIDEzIGxhenkgZG9ncy4uLi4ucy4uLnMuLi5zLi4ucy4uLg
 ```
 
-voce envia para o STDIN do programa o seguinte JSON
+voce envia para o STDIN do programa o seguinte JSON, lembrando que o parâmetro key é uma string que representa os bytes no formato hexadecimal.
 
 ```
 {

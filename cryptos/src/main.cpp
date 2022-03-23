@@ -44,7 +44,7 @@ class Config_data {
       std::string mode;
       std::string data;
       std::string key;
-      uint8_t bytes[4096];
+      uint8_t bytes[16834];
       std::vector<uint8_t> byte_vec;
       crypto_func_t func;
       unsigned int block_size;
@@ -74,6 +74,17 @@ json response;
 
 static uint8_t giant_array[4096*16];
 
+static std::vector<char> HexToBytes(const std::string& hex) {
+  std::vector<char> bytes;
+
+  for (unsigned int i = 0; i < hex.length(); i += 2) {
+    std::string byteString = hex.substr(i, 2);
+    char byte = (char) strtol(byteString.c_str(), NULL, 16);
+    bytes.push_back(byte);
+  }
+
+  return bytes;
+}
 
 int main(int argc,char *argv[]){
 
@@ -98,12 +109,10 @@ int main(int argc,char *argv[]){
       if(key == "data"){cfg.data = value;}
       if(key == "key"){cfg.key = value;}
    }
-   // if(!is_empty(cfg))
-   std::string bosta = b64decode(cfg.data);   
+   // if(!is_empty(cfg))   
    process_request(cfg);
-   memcpy(key,cfg.key.c_str(),32);
+   memcpy(key,HexToBytes(cfg.key).data(),32);
    result.resize(cfg.byte_vec.size());
-
    cfg.func(&cfg.bytes[0],&giant_array[0],cfg.byte_vec.size());
 
    // cfg.func(&cfg.bytes[0],&giant_array[0],16);
@@ -137,7 +146,11 @@ static void process_request(Config_data& cfg_data){
          return;
       }
    std::string test = b64decode(cfg_data.data); //decode the data
-
+   int padding;
+   if(test.size() % 16){ //restante nao zero
+      padding = 16 - (test.size() % 16);
+   }
+   test.resize(test.size()+padding,'\0');
    // cfg_data.bytes = (uint8_t*)test.c_str();
    memcpy(cfg_data.bytes,test.c_str(),test.length());
    cfg_data.data = test;
