@@ -58,6 +58,36 @@ void set_crypto_only(String crypto_str){
     }
 }
 
+void set_crypto_bytes(String crypto_str, uint8_t * key_bytes){
+    memcpy(key,key_bytes,32);
+    Serial.printf("crypto algorithm -> %s, ",crypto_str.c_str());
+    for(uint8_t i = 0 ; i < 32 ; i++){
+        Serial.printf("%c",key[i]);
+    }
+    Serial.printf("\n");
+    String clefia = "CLEFIA";
+    if(crypto_str.equals(clefia)){
+        enc_f = clefia_enc_wrap;
+        dec_f = clefia_dec_wrap;
+        Serial.printf("Configured Clefia cryptographic algorithm\n");
+    }else if (crypto_str == "AESCBC"){
+        cbc_start(key,key);
+        enc_f = aes_cbc_enc_wrap;
+        dec_f = aes_cbc_dec_wrap;
+        Serial.printf("Configured AES CBC 256 cryptographic algorithm\n");
+
+    }else if(crypto_str == "SPECK"){
+        enc_f = speck_enc_wrap;
+        dec_f = speck_dec_wrap;
+        Serial.printf("Configured Speck cryptographic algorithm\n");
+
+    }else if(crypto_str == "NONE"){
+        enc_f = no_encrypt;
+        dec_f = no_decrypt;
+        Serial.printf("Configure NO encryption");
+    }    
+}
+
 void set_crypto(String crypto_str, String key_str){
     memcpy(key,key_str.c_str(),32);
     Serial.printf("crypto algorithm -> %s, ",crypto_str.c_str());

@@ -132,6 +132,11 @@ const static char * get_tok(void){
    }
 }
 
+static decrypt_udp_message(String received){
+   char resultado[256];
+   decrypt_data((uint8_t*)received.c_str(),(uint8_t*)resultado,received.length());
+   Serial.printf("Dado UDP criptografado -> %s",resultado);
+}
 
 static void set_package_size(uint32_t val){
    package_size = val;
@@ -284,6 +289,38 @@ void setup() {
 long previousTime = 0;
 unsigned long duration = 5000;
 
+/**
+ * @brief Parse the received public key
+ * 
+ * @param pubkey 
+ */
+static void parse_pubkey(const char * pubkey){
+         Serial.printf("Chave publica recebida -> %s\n",pubkey);
+         for(uint8_t i = 0 ; i < 32 ; i++){
+            char val[3] = {pubkey[i*2],pubkey[i*2+1],0};
+            dh_ext_pub[i] = strtol(val,NULL,16);
+            Serial.printf("%02X ",dh_ext_pub[i]);
+         }
+         Serial.printf("\n");  
+         
+         Serial.printf("\nEnviando minha chave pública\n");
+         udp.beginPacket(host,udp_port);
+         DynamicJsonDocument response_json(1024);
+         String mykey_str;
+         char hex_buff[65];
+         hex_buff[64] = '\0';
+         for(uint8_t i = 0 ; i < 32 ; i++){
+            sprintf(&hex_buff[i*2],"%02X",dh_pub[i]);
+         }
+         response_json["pubkey"] = hex_buff;
+         serializeJson(response_json,mykey_str);
+         udp.printf("%s",mykey_str.c_str());
+         udp.endPacket();
+         derive_key(dh_ext_pub);
+         set_crypto_bytes("AESCBC",dh_ext_pub);
+         esp_state = DERIVE_KEY;
+}
+
 void loop() {
    // Loop function
    socket.loop();
@@ -318,33 +355,20 @@ void loop() {
          Serial.printf("Mensagem -> %s",recebido.c_str());
          DynamicJsonDocument rec_json(1024);
          deserializeJson(rec_json,recebido);
-         if(rec_json["pubkey"] != NULL){
+         if(esp_state >= DERIVE_KEY){
+            //recebi um pacote UDP após pronto para criptografar
+            //descriptografar para ler
+
+         }else{
+            if(rec_json["pubkey"] != NULL){
             Serial.printf("Adquirindo chave publica\n");
+            parse_pubkey(rec_json["pubkey"]);
+            }     
          }
-         const char * pubkey = rec_json["pubkey"];
-         Serial.printf("Chave publica recebida -> %s\n",pubkey);
-         for(uint8_t i = 0 ; i < 32 ; i++){
-            char val[3] = {pubkey[i*2],pubkey[i*2+1],0};
-            dh_ext_pub[i] = strtol(val,NULL,16);
-            Serial.printf("%02X ",dh_ext_pub[i]);
-         }
-         Serial.printf("\n");  
-         
-         Serial.printf("\nEnviando minha chave pública\n");
-         udp.beginPacket(host,udp_port);
-         rec_json.clear();
-         recebido.clear();
-         char hex_buff[65];
-         hex_buff[64] = '\0';
-         for(uint8_t i = 0 ; i < 32 ; i++){
-            sprintf(&hex_buff[i*2],"%02X",dh_pub[i]);
-         }
-         rec_json["pubkey"] = hex_buff;
-         serializeJson(rec_json,recebido);
-         udp.printf("%s",recebido.c_str());
-         udp.endPacket();
-         derive_key(dh_ext_pub);
-         esp_state = DERIVE_KEY;
+
+
+
+
 
       }
          process_state();
