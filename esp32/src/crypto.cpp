@@ -62,7 +62,7 @@ void set_crypto_bytes(String crypto_str, uint8_t * key_bytes){
     memcpy(key,key_bytes,32);
     Serial.printf("crypto algorithm -> %s, ",crypto_str.c_str());
     for(uint8_t i = 0 ; i < 32 ; i++){
-        Serial.printf("%c",key[i]);
+        Serial.printf("%02X",key[i]);
     }
     Serial.printf("\n");
     String clefia = "CLEFIA";

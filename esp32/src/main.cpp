@@ -23,6 +23,9 @@
 #include "crypto_test.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+extern "C"{
+#include "crypto/base64.h"
+}
 #include "crypto.h"
 #include "Crypto.h"
 #include "Curve25519.h"
@@ -132,10 +135,17 @@ const static char * get_tok(void){
    }
 }
 
-static decrypt_udp_message(String received){
+static void decrypt_udp_message(const char * received){
+   unsigned char decode[128];
+   memcpy(decode,received,strlen(received));
+   size_t result_len;
+   unsigned char * decoded = base64_decode(decode,strlen(received),&result_len);
    char resultado[256];
-   decrypt_data((uint8_t*)received.c_str(),(uint8_t*)resultado,received.length());
-   Serial.printf("Dado UDP criptografado -> %s",resultado);
+   
+   decrypt_data((uint8_t*)decoded,(uint8_t*)resultado,result_len);
+   Serial.printf("Dado descriptografado -> %s",resultado);
+   free(decoded);
+
 }
 
 static void set_package_size(uint32_t val){
@@ -352,13 +362,13 @@ void loop() {
             char c = udp.read();
             recebido += c;
          }
-         Serial.printf("Mensagem -> %s",recebido.c_str());
+         Serial.printf("Mensagem -> %s\n",recebido.c_str());
          DynamicJsonDocument rec_json(1024);
          deserializeJson(rec_json,recebido);
          if(esp_state >= DERIVE_KEY){
             //recebi um pacote UDP após pronto para criptografar
             //descriptografar para ler
-
+            decrypt_udp_message(recebido.c_str());
          }else{
             if(rec_json["pubkey"] != NULL){
             Serial.printf("Adquirindo chave publica\n");
@@ -459,25 +469,3 @@ static void process_state(void){
    }
 
 }
-
-// static void socket_io_task(void * arg){
-
-//    DynamicJsonDocument doc(2048);
-
-//    while(true){
-//       if(socket.isConnected()){
-//          static int i = 1;
-//          // String output;
-//          // for(uint8_t j = 0 ; j < 20 ; j++){
-//          //    doc["data"][j] = j*i * 3; 
-//          // }
-//          // serializeJson(doc,output);
-//          // socket.emit("esp-message","BATATEX");
-//          Serial.printf("Sent Json %d\n\r",i++);
-//       }else{
-//          Serial.println("Debug: estou offline");
-//       }
-
-//       vTaskDelay(pdMS_TO_TICKS(5000));
-//    } 
-// }
