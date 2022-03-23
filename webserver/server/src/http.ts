@@ -356,6 +356,7 @@ udp_server.on('message', (msg, rinfo) => {
 		console.log(shared_sec)
 		const autorizado = {authorization:"Success"}
 		const response = request_encrypt("AESCBC",shared_sec.toString("hex"),Buffer.from((JSON.stringify(autorizado))).toString("base64"))
+		console.log(response)
 		udp_server.send(response,rinfo.port,rinfo.address)
 	}
   });
