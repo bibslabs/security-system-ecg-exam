@@ -88,6 +88,7 @@ curve.makeSecretKey(private_key)
 
 const pub_key = curve.derivePublicKey(private_key)
 
+var shared_sec = Buffer.alloc(32)
 
 /** 
  * @brief configura o ESP para um dado teste
@@ -200,7 +201,35 @@ enum ESP_STATE {
 }
 
 /**
- * Função de faz uma requisição ao executável de criptografia
+ * Função de faz uma requisição ao executável de criptografia para criptografar um dado
+ * 
+ * @param algo algoritmo a ser usado
+ * @param key chave criptográfica a ser usada
+ * @param data_b64 dados em base64
+ */
+
+function request_encrypt(algo : string, key : string, data_b64 : string){
+	const path = require("path");
+  
+	var input = {
+	  data:data_b64,
+	  algo:algo,
+	  key:key,
+	  mode:"encrypt"
+	}
+	const input_str = JSON.stringify(input)
+	console.log(input_str);
+	const execPath = path.resolve(__dirname,"./crypto.exe");
+	var spawn = require('child_process').spawnSync;
+	var child = spawn(execPath, [input_str]);
+	const res =  Buffer.from(child.stderr,"base64").toString("ascii");
+	console.log(res)
+	const ret = JSON.parse(res);
+	return ret["result"];
+}
+
+/**
+ * Função de faz uma requisição ao executável de criptografia para descriptografar um dado
  * 
  * @param algo algoritmo a ser usado
  * @param key chave criptográfica a ser usada
@@ -322,10 +351,12 @@ udp_server.on('message', (msg, rinfo) => {
 	if("pubkey" in request){
 		console.log("Chave publica recebida")
 		const recv_pub = Buffer.from(request["pubkey"],"hex")
-		const shared_sec = curve.deriveSharedSecret(private_key, recv_pub)
+		shared_sec = curve.deriveSharedSecret(private_key, recv_pub)
 		console.log("Chave secreta compartilhada")
 		console.log(shared_sec)
-		
+		const autorizado = {authorization:"Success"}
+		const response = request_encrypt("AESCBC",shared_sec.toString("hex"),Buffer.from((JSON.stringify(autorizado))).toString("base64"))
+		udp_server.send(response,rinfo.port,rinfo.address)
 	}
   });
   
